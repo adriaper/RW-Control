@@ -17,19 +17,43 @@ SCMD DriverOne;    //Driver Object definition
 
 //------------------------------------Global variables
 
-int OBC_value;    //Increment of angle, here for now, should be in positioning type select
-int IMU_degree_value;
-int IMU_speed_value;
+int OBC_value=0;    //Increment of angle, here for now, should be in positioning type select
+int IMU_degree_value=0;
+int IMU_speed_value=1;
 int rw_speed=0;
 
 //------------------------------------Functions
 
 //Function to read OBC_Data
-void OBC_data_receive(){            //Get data from OBC. Uses Timer CH1
-  if(Serial.available()>0){         //For now Serial sends data
-    int mode_value = Serial.read();
+void OBC_mode_receive(){            //Get data from OBC. Uses Timer CH1
+   if (Serial.available())
+   {
+    int mode_value = (char)Serial.read();
+    Serial.flush();
+    //decoder(mode_value);
     mode_select(mode_value);
+   }
+  Serial.println("Reading OBC mode");
+}
+
+void OBC_data_receive(){            //Get data from OBC. Uses Timer CH1
+ if (Serial.available() > 0) {
+    //Se crea una variable que servirá como buffer
+    String bufferString = "";
+    /*
+     * Se le indica a Arduino que mientras haya datos
+     * disponibles para ser leídos en el puerto serie
+     * se mantenga concatenando los caracteres en la
+     * variable bufferString
+     */
+    while (Serial.available() > 0) {
+      bufferString += (char)Serial.read();
+    }
+    //Se transforma el buffer a un número entero
+    OBC_value = bufferString.toInt();
+    positioning_coarse();
   }
+  Serial.println("Reading OBC data");
 }
 
 //Function to read IMU_Data (and refreshes the global variables for IMU data)
@@ -49,7 +73,7 @@ void get_impulse(bool rw_direction, int new_rw_speed){  //acount for change in d
 void ramp_definition(bool rw_direction, int Acc_ramp_time_reach, int rw_ramp_speed_reach){ 
   //Single Impulse, we need to put the motor at full speed, get the time before starts and the time when it reaches max speed
   //As we dont know the time it lasts, we have to see if speed changes on the cubesat. That is the use of the while.
- 
+  Serial.println("Ramp Start");
   int Prev_speed=1;
   int Curr_speed=0;
   
@@ -65,47 +89,51 @@ void ramp_definition(bool rw_direction, int Acc_ramp_time_reach, int rw_ramp_spe
 
 //---------------------------------------------------------------------------MODE_SELECT
 void mode_select(int mode_value){
+  Timer1.detachInterrupt(TIMER_CH1);
   switch(mode_value){
     default:   //----------------------Mode Normal (0): Waiting for OBC
     mode_normal();
     break;
-    case 1:   //----------------------Mode Positioning RW only
+    case '1':   //----------------------Mode Positioning RW only
+    Serial.println("Mode Positioning");
     mode_positioning();
     break;
-    case 2:   //----------------------Mode Detumbling
+    case '2':   //----------------------Mode Detumbling
     break;
-    case 3:   //----------------------Mode Solar Pointing
+    case '3':   //----------------------Mode Solar Pointing
     break;
   }
 }
 
 void mode_normal(){    
-  Timer1.attachInterrupt(TIMER_CH1, OBC_data_receive);
+  Timer1.attachInterrupt(TIMER_CH1, OBC_mode_receive);
 }
 
 //-----------------------------MODE POSITIONING
 void mode_positioning(){
-  Timer1.detachInterrupt(TIMER_CH1);
+  Serial.println("Positioning begin");
   positioning_type_select();
-  mode_normal();
+  //mode_normal();
 }
 
 void positioning_type_select(){
-//  Insert code to select if the positioning will be heavy (impulses) or light (PD)
+//  Insert code to select if the positioning will be coarse (impulses) or fine (PD)
 /* It should be:
  * read IMU degree value
  * get OBC value from OBC and save in global variable
  * comparison to OBC value (wanted position), add to the void function definition
  * if (comparison<acceptable_error){
- * positioning_light();
+ * positioning_fine();
  * }else{
- * positioning_heavy();
+ * positioning_coarse();
  * }
  */
- positioning_heavy(OBC_value);       //For now only heavy
+    Serial.println("-----");
+    Timer1.attachInterrupt(TIMER_CH2, OBC_data_receive);
 }
 
-void positioning_heavy(int OBC_value){     //For now simple. 
+void positioning_coarse(){     //For now simple. 
+  Timer1.detachInterrupt(TIMER_CH2);
   
   bool rw_direction=true;   //true=positive (CCW), false=negative (CW)
    //In case OBC_value is positive, value remains the same and rw direction is true, the default value of the variable
@@ -121,13 +149,14 @@ void positioning_heavy(int OBC_value){     //For now simple.
   
   read_IMU();
   Initial_IMU_degree_value=IMU_degree_value;  //Stores initial degree
-  Initial_time = Timer1.getTime();  //Stores initial Time
-    
+  //Initial_time = Timer1.getTime();  //Stores initial Time
+
   ramp_definition(rw_direction, 0, 255);  
   //0 will not be used as we dont define the time the motor last to do an impulse. 255 is the max value
   //This values will be sustituted by how we want the time and speed to reach in the ramp.
-  
-  Final_time = Timer1.getTime();
+       Serial.println(OBC_value);
+  /* 
+  //Final_time = Timer1.getTime();
   ACC_time=Final_time-Initial_time;
   read_IMU();
   Final_IMU_degree_value=IMU_degree_value;
@@ -137,27 +166,31 @@ void positioning_heavy(int OBC_value){     //For now simple.
   Wait_time_est=(OBC_value-(2*(Final_IMU_degree_value-Initial_IMU_degree_value)))/IMU_speed_value; 
   Total_time_est=Wait_time_est-(2*ACC_time);
 
-  Initial_time = Timer1.getTime();  //Stores initial Time
-  Timer1.attachInterrupt(TIMER_CH2, read_IMU());
-  while((IMU_degree_value-Final_IMU_degree_value)<(OBC_value-(2*Delta_degree_ramp)))  //degrees that turns in wait vs total degrees of the wait
-  Timer1.detachInterrupt(TIMER_CH2);
-  Final_time = Timer1.getTime();
+  //Initial_time = Timer1.getTime();  //Stores initial Time
+  //Timer1.attachInterrupt(TIMER_CH2, read_IMU());
+  while((IMU_degree_value-Final_IMU_degree_value)<(OBC_value-(2*Delta_degree_ramp))){
+    Serial.println("Waiting");//degrees that turns in wait vs total degrees of the wait
+  }
+  //Timer1.detachInterrupt(TIMER_CH2);
+  //Final_time = Timer1.getTime();
   Wait_time=Final_time-Initial_time;
   
-  Initial_time = Timer1.getTime();  //Stores initial Time
+  //Initial_time = Timer1.getTime();  //Stores initial Time
   ramp_definition(rw_direction, 0, 255);  
-  Final_time = Timer1.getTime();
+  //Final_time = Timer1.getTime();
   DEC_time=Final_time-Initial_time;
   Total_time=ACC_time+Wait_time+DEC_time;
 
   read_IMU();
-  if((IMU_degree_value-Initial_degree_value)!=OBC_value){
-    positioning_light();
+  if((IMU_degree_value-Initial_IMU_degree_value)!=OBC_value){
+    positioning_fine();
   }
+  */
 }
 
-void positioning_heavy(int OBC_value){     //For now simple. 
+void positioning_fine(){     //For now simple. 
   //PD controller
+  OBC_value=0;
 }
 
 
@@ -170,6 +203,7 @@ Serial.println("START");
 pinMode(LEDPIN,OUTPUT);
 
 //-------------------------Driver Setup
+
 DriverOne.settings.commInterface = I2C_MODE;    //Driver Comm Mode
 DriverOne.settings.I2CAddress = 0x5D;    //Driver Adress (0x5D by Defalut)
 
@@ -188,13 +222,23 @@ DriverOne.enable();
 
 //---------------------------IMU
 
+
+
 //---------------------------Timers
+  Timer1.pause();
 
-    Timer1.setMode(TIMER_CH1, TIMER_OUTPUTCOMPARE);
-    Timer1.setPeriod(100000); // in microseconds
-    Timer1.setCompare(TIMER_CH1, 1);      // overflow might be small
-
-    Timer1.attachInterrupt(TIMER_CH1, OBC_data_receive);
+  Timer1.setPrescaleFactor(7200);   //72MHz Clock / 7200 = 10KHz timer
+  Timer1.setOverflow(1000);    //Overflow occurs at 1000, each 100 ms timer restarts
+  
+  Timer1.setMode(TIMER_CH1, TIMER_OUTPUT_COMPARE);    //Configure channel to OUTPURCOMPARE
+  Timer1.setMode(TIMER_CH2, TIMER_OUTPUT_COMPARE);    //Configure channel to OUTPURCOMPARE
+  
+  Timer1.setCompare(TIMER_CH1, 1);
+  Timer1.setCompare(TIMER_CH2, 1);
+  
+  Timer1.attachInterrupt(TIMER_CH1, OBC_mode_receive);
+  Timer1.refresh();   //Refresh timer and start over
+  Timer1.resume();
 }
 
 void loop() {
