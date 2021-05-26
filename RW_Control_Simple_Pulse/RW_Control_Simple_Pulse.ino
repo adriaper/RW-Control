@@ -303,7 +303,7 @@ void positioning_Coarse(){     //For now simple
     rw_direction=false;
   }
 
-  float Initial_IMU_degree_value, Final_IMU_degree_value, Delta_degree_ramp, Degree_stop_wait, 
+  float Initial_IMU_degree_value, Final_IMU_degree_value, Delta_degree_ramp, Degree_stop_wait;
   float Prev_IMU_deg_data_Z, Check_IMU_deg_data_Z;
   int overlap_count=0; 
   bool waiting=true;
@@ -318,11 +318,12 @@ void positioning_Coarse(){     //For now simple
 //This values will be sustituted by how we want the time and speed to reach in the ramp.
   read_IMU();
   Final_IMU_degree_value=IMU_deg_data_Z;    //Stores final degree, only in Z
-  if(rw_direction){
+  if(!rw_direction){
      Delta_degree_ramp=Final_IMU_degree_value-Initial_IMU_degree_value;    //degree turnt on acc, only in Z. Shoud be positive
   }else{
     Delta_degree_ramp=Initial_IMU_degree_value-Final_IMU_degree_value;    //degree turnt on acc, only in Z. Shoud be positive
   }
+  
   if(Delta_degree_ramp<0){
     Delta_degree_ramp += 360; //In case its negative adds 360
     //Negative cases: changes goes by 0º. EX: 330 to 30 when CCW (should be 60 but calculus is 30-330= -300)
@@ -335,7 +336,7 @@ void positioning_Coarse(){     //For now simple
     if((degree_turn_value - 2*Delta_degree_ramp)>0){ //if its <0, it must be done inmediatly after, and still it would be too much turn.
       Degree_stop_wait = Final_IMU_degree_value + (degree_turn_value - 2*Delta_degree_ramp);  //Get value of degree to start
     
-      Timer1.attachInterrupt(TIMER_CH2, read_IMU());
+      Timer1.attachInterrupt(TIMER_CH2, read_IMU);
       while(waiting){   //Stays as long as waitin is true.
         Serial.println("Waiting");
         
@@ -366,7 +367,7 @@ void positioning_Coarse(){     //For now simple
     if((degree_turn_value - 2*Delta_degree_ramp)>0){ //if its <0, it must be done inmediatly after, and still it would be too much turn.
       Degree_stop_wait = Final_IMU_degree_value - (degree_turn_value - 2*Delta_degree_ramp);  //Get value of degree to start
     
-      Timer1.attachInterrupt(TIMER_CH2, read_IMU());
+      Timer1.attachInterrupt(TIMER_CH2, read_IMU);
       while(waiting){   //Stays as long as waitin is true.
         Serial.println("Waiting");
         
@@ -415,10 +416,11 @@ void positioning_Coarse(){     //For now simple
     //                                    EX: 30 to 330 when CW  (should be 60 but calculus is 30-330= -300)
   }
   
-  if(Delta_degree_ramp-degree_turn_value)<Degree_Total_Tolerancy || (IMU_degree_value-degree_turn_value)>Degree_Total_Tolerancy){  //Real turn vs wanted turn, checks if it is considered good
+  if((Delta_degree_ramp-degree_turn_value)<Degree_Total_Tolerancy || (Delta_degree_ramp-degree_turn_value)>Degree_Total_Tolerancy){  //Real turn vs wanted turn, checks if it is considered good
      mode_Select(OBC_mode_value); //Valid position
   }else{
-     positioning_Fine(OBC_data_value); //Correction
+    positioning_Fine(); //Correction
+
   }
   
 }
