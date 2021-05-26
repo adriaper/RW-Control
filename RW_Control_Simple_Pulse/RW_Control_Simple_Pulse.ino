@@ -1,6 +1,6 @@
 /* Written on 12/05/2021
  * STM32 package from http://dan.drown.org/stm32duino/package_STM32duino_index.json
- * SCMD library by SparkFun used (https://github.com/sparkfun/SparkFun_Serial_Controlled_Motor_Driver_Arduino_Library)
+ * SCMD library by SparkFun used (https://github.com/sparkfun/SparkFun_Serial1_Controlled_Motor_Driver_Arduino_Library)
  * MPU9250 library by Rafa Castalla used (https://github.com/rafacastalla/MPU9250-1)
  * read_IMU() and IMU setup content extracted from the code "IMU_SPI.3_Pitch-Roll" by Andrés Gómez and Miquel Reurer, from the PLATHON group (magnetorquers section)
  * IMU code might be needed to change further
@@ -42,31 +42,31 @@ int OBC_mode_value=0;    //values to get from OBC
 //██████████████████████████████████████████████████████████████████████ FUNCTIONS
 //▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ GENERAL USE FUNCTIONS
 //▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒ OBC Functions
-//░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ Get mode from OBC. Uses Timer CH1. Serial as a substitution
+//░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ Get mode from OBC. Uses Timer CH1. Serial1 as a substitution
 void OBC_mode_receive(){            
-  if (Serial.available() > 0) {
-    String bufferString = "";   //String for buffer of Serial
-    while (Serial.available() > 0) {
-      bufferString += (char)Serial.read();  //Adds chars to the Serial buffer
+  if (Serial1.available() > 0) {
+    String bufferString = "";   //String for buffer of Serial1
+    while (Serial1.available() > 0) {
+      bufferString += (char)Serial1.read();  //Adds chars to the Serial1 buffer
     }
     OBC_mode_value = bufferString.toInt();   //Conversion from String to int
-    Serial.print("Mode Number: ");
-    Serial.println(OBC_mode_value);
-    Serial.flush();
+    Serial1.print("Mode Number: ");
+    Serial1.println(OBC_mode_value);
+  
   }
 }
 
-//░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ Get data from OBC. Uses Timer CH1. Serial as a substitution
+//░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ Get data from OBC. Uses Timer CH1. Serial1 as a substitution
 void OBC_data_receive(){            
-  if (Serial.available() > 0) {
-    String bufferString = "";   //String for buffer of Serial
-    while (Serial.available() > 0) {
-      bufferString += (char)Serial.read();  //adds chars to the Serial buffer
+  if (Serial1.available() > 0) {
+    String bufferString = "";   //String for buffer of Serial1
+    while (Serial1.available() > 0) {
+      bufferString += (char)Serial1.read();  //adds chars to the Serial1 buffer
     }
     OBC_data_value = bufferString.toInt();   //Conversion from String to int
-    Serial.print("Value to turn: ");
-    Serial.println(OBC_data_value);
-    Serial.flush();
+    Serial1.print("Value to turn: ");
+    Serial1.println(OBC_data_value);
+    
   }
 }
 
@@ -84,16 +84,16 @@ void get_impulse(bool rw_direction, int new_rw_speed){  //acount for change in d
 void ramp_definition(bool rw_direction, int Acc_ramp_time_reach, int rw_ramp_speed_reach){ 
   //Single Impulse, we need to put the motor at full speed, get the time before starts and the time when it reaches max speed
   //As we dont know the time it lasts, we have to see if speed changes on the cubesat. That is the use of the while.
-  Serial.println("Ramp Start");
+  Serial1.println("Ramp Start");
   int tolerancia=0;
 
   get_impulse(rw_direction, rw_ramp_speed_reach);
 
-  Timer1.attachInterrupt(TIMER_CH2, read_IMU);
+  Timer1.attachInterrupt(TIMER_CH4, read_IMU);
   while(IMU_accel_data_X>Accel_Tolerancy && IMU_accel_data_X<Accel_Tolerancy){ //Range of tolerancy
-    //delay(1);  //Change
+    delay(1);  //Change
   }
-  Timer1.detachInterrupt(TIMER_CH2);
+  Timer1.detachInterrupt(TIMER_CH4);
 }
 
 //▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒ IMU Functions
@@ -143,9 +143,9 @@ void read_IMU(){
   Apitch -= 1.0;
   Aroll -= 0.4;
 
-  //Serial.print(Apitch,6);
-  //Serial.print("\t ");
-  //Serial.println(Aroll,6);
+  //Serial1.print(Apitch,6);
+  //Serial1.print("\t ");
+  //Serial1.println(Aroll,6);
 
   if (Gyro_sync)
   {
@@ -191,23 +191,26 @@ void read_IMU(){
   IMU_deg_data_Z=Heading;
 }
 
-//░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ Function to show IMU_Data on the Serial Monitor
+//░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ Function to show IMU_Data on the Serial1 Monitor
 void show_IMU(){
 
-  Serial.print("ACCEL in X, Y, Z:");   Serial.print('\t');
-  Serial.print(IMU_accel_data_X,6);   Serial.print('\t');
-  Serial.print(IMU_accel_data_Y,6);   Serial.print('\t');
-  Serial.println(IMU_accel_data_Z,6);
+  Serial1.print(" / ACCEL: "); 
+  //Serial1.print(IMU_accel_data_X,4);   Serial1.print('\t');
+  //Serial1.print(IMU_accel_data_Y,4);   Serial1.print('\t');
+  Serial1.print(IMU_accel_data_Z,4); 
 
-  Serial.print("GYROS in X, Y, Z:");   Serial.print('\t');
-  Serial.print(IMU_gyro_data_X,6);  Serial.print('\t');
-  Serial.print(IMU_gyro_data_Y,6);  Serial.print('\t');
-  Serial.println(IMU_gyro_data_Z,6);
+  Serial1.print(" / GYROS: ");  
+  //Serial1.print(IMU_gyro_data_X,4);  Serial1.print('\t');
+  //Serial1.print(IMU_gyro_data_Y,4);  Serial1.print('\t');
+  Serial1.print(IMU_gyro_data_Z,4); 
 
-  Serial.print("DEG º in X, Y, Z:");   Serial.print('\t');
-  Serial.print(IMU_deg_data_X,6);    Serial.print('\t');
-  Serial.print(IMU_deg_data_Y,6);    Serial.print('\t');
-  Serial.println(IMU_deg_data_Z,6);
+  Serial1.print(" / DEG: "); 
+  //Serial1.print(IMU_deg_data_X,4);    Serial1.print('\t');
+  //Serial1.print(IMU_deg_data_Y,4);    Serial1.print('\t');
+  Serial1.println(IMU_deg_data_Z,4); 
+
+  
+ 
 }
 
 //░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ Function to both read and show IMU_Data
@@ -221,15 +224,15 @@ void read_show_IMU(){
 void mode_Select(int mode_value){
   switch(mode_value){
     default:   //----------------------Mode OBC Imput Waiting (0): Waiting for OBC
-    Serial.println("Reading mode from OBC");
+    Serial1.println("Reading mode from OBC");
     mode_OBC_Imput_Wait();
     break;
     case 1:   //----------------------Mode Positioning RW only
-    Serial.println("Mode Positioning");
+    Serial1.println("Mode Positioning");
     mode_Positioning_RW();
     break;
     case 2:   //----------------------Mode IMU reading (NO USE)
-    Serial.println("Reading IMU");
+    Serial1.println("Reading IMU");
     mode_IMU_reading();
     break;
   }
@@ -238,7 +241,7 @@ void mode_Select(int mode_value){
 //▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒ MODE IMU ONLY FOR TESTING
 void mode_IMU_reading(){ 
   OBC_mode_value=0;
-  Timer1.attachInterrupt(TIMER_CH2, read_show_IMU);
+  Timer1.attachInterrupt(TIMER_CH4, read_show_IMU);
   //read_show_IMU();
   //mode_Select(OBC_mode_value);
 }
@@ -246,21 +249,21 @@ void mode_IMU_reading(){
 //▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒ 0. Mode Default, OBC Reading
 void mode_OBC_Imput_Wait(){ 
   OBC_mode_value=0;
-  Timer1.attachInterrupt(TIMER_CH1, OBC_mode_receive);
+  Timer1.attachInterrupt(TIMER_CH3, OBC_mode_receive);
   while(OBC_mode_value==0){ 
     delay(1); //If not used the while function does not work
     //it can be added more conditions to evade being blocked until a data is received.
     //for example, it could function an interrupt with a forced exit and an if after or something
   }
-  Timer1.detachInterrupt(TIMER_CH1);
-  Serial.println(OBC_mode_value);
+  Timer1.detachInterrupt(TIMER_CH3);
+  Serial1.println(OBC_mode_value);
   mode_Select(OBC_mode_value);
 }
 
 //▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒ 1. Mode Positioning (RW only)
 void mode_Positioning_RW(){
   OBC_mode_value=0;
-  Serial.println ("Positioning begin");
+  Serial1.println ("Positioning begin");
 //  Insert code to select if the positioning will be coarse (impulses) or fine (PD)
 /* It should be something like:
  * read IMU degree value
@@ -273,15 +276,15 @@ void mode_Positioning_RW(){
  * }
  */
  read_IMU();
- Serial.print("Axis Z position: ");
- Serial.println(IMU_deg_data_Z);
- Serial.println("Insert degree value to turn");
+ Serial1.print("Axis Z position: ");
+ Serial1.println(IMU_deg_data_Z);
+ Serial1.println("Insert degree value to turn");
  OBC_data_value=0;
- Timer1.attachInterrupt(TIMER_CH1, OBC_data_receive);
+ Timer1.attachInterrupt(TIMER_CH3, OBC_data_receive);
  while(OBC_data_value==0){ 
    delay(1); //If not used the while function does not work
  }
- Timer1.detachInterrupt(TIMER_CH1);
+ Timer1.detachInterrupt(TIMER_CH3);
 
  if(OBC_data_value<=Degree_PointingMode_Tolerancy){
    positioning_Fine();
@@ -292,11 +295,14 @@ void mode_Positioning_RW(){
 
 //░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 1.1. Mode Positioning Coarse
 void positioning_Coarse(){     //For now simple
-  Serial.println("Mode Positioning Coarse");
+  Serial1.println("Mode Positioning Coarse");
   float degree_turn_value=OBC_data_value;   //Stores a new variable to not overwrite the original value
   bool rw_direction=true;   //true=positive (CCW), false=negative (CW)
 //  In case OBC_data_value is positive, value remains the same and rw direction is true, the default value of the variable
 //  In case OBC_data_value is negative, value change to positive and rw direction is false
+
+
+
 
   if(degree_turn_value<0){     
     degree_turn_value=-degree_turn_value;
@@ -336,9 +342,9 @@ void positioning_Coarse(){     //For now simple
     if((degree_turn_value - 2*Delta_degree_ramp)>0){ //if its <0, it must be done inmediatly after, and still it would be too much turn.
       Degree_stop_wait = Final_IMU_degree_value + (degree_turn_value - 2*Delta_degree_ramp);  //Get value of degree to start
     
-      Timer1.attachInterrupt(TIMER_CH2, read_IMU);
+      Timer1.attachInterrupt(TIMER_CH4, read_IMU);
       while(waiting){   //Stays as long as waitin is true.
-        Serial.println("Waiting");
+        Serial1.println("Waiting");
         
         //CAUTION WITH READING VALUES; AS IT IS ALWAYS FROM 0 TO 360
         // Degree_stop_wait will always be > IMU_deg_data_Z. If IMU_deg_data_Z>> (ex: 359º),  Degree_stop_wait can be >360. Thus the value of If IMU_deg_data_Z would never reach Degree_stop_wait
@@ -361,15 +367,15 @@ void positioning_Coarse(){     //For now simple
         delay(1); //To solve errors
         //No writing of read_IMU as it is already done by a timer. Just to remind IMU_deg_data_Z is constantly reading values.
       }
-      Timer1.detachInterrupt(TIMER_CH2);
+      Timer1.detachInterrupt(TIMER_CH4);
     }
   }else{  //CASE CW
     if((degree_turn_value - 2*Delta_degree_ramp)>0){ //if its <0, it must be done inmediatly after, and still it would be too much turn.
       Degree_stop_wait = Final_IMU_degree_value - (degree_turn_value - 2*Delta_degree_ramp);  //Get value of degree to start
     
-      Timer1.attachInterrupt(TIMER_CH2, read_IMU);
+      Timer1.attachInterrupt(TIMER_CH4, read_IMU);
       while(waiting){   //Stays as long as waitin is true.
-        Serial.println("Waiting");
+        Serial1.println("Waiting");
         
         //CAUTION WITH READING VALUES; AS IT IS ALWAYS FROM 0 TO 360
         // Degree_stop_wait will always be < IMU_deg_data_Z. If IMU_deg_data_Z<< (ex: 1º),  Degree_stop_wait can be <0. Thus the value of If IMU_deg_data_Z would never reach Degree_stop_wait
@@ -394,7 +400,7 @@ void positioning_Coarse(){     //For now simple
         delay(1); //To solve errors
         //No writing of read_IMU as it is already done by a timer. Just to remind IMU_deg_data_Z is constantly reading values.
       }
-      Timer1.detachInterrupt(TIMER_CH2);
+      Timer1.detachInterrupt(TIMER_CH4);
     }
   }
 
@@ -422,26 +428,38 @@ void positioning_Coarse(){     //For now simple
     positioning_Fine(); //Correction
 
   }
-  
 }
 
 //░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 1.2. Mode Positioning Coarse
 void positioning_Fine(){     //For now nothing 
-Serial.println("Mode Positioning Fine");
+Serial1.println("Mode Positioning Fine");
 //PD controller
 OBC_data_value=0;
-Serial.println("End of Manouver");
+Serial1.println("End of Manouver");
 mode_Select(OBC_mode_value);
 }
 
 //██████████████████████████████████████████████████████████████████████ VOID SETUP
 void setup() {
+
+  //▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒ Timers
+  Timer1.pause();
+  Timer1.setPrescaleFactor(7200);   //72MHz Clock / 7200 = 10KHz timer
+  Timer1.setOverflow(10000);    //Overflow occurs at 1000, each 100 ms timer restarts
+    
+  Timer1.setMode(TIMER_CH3, TIMER_OUTPUT_COMPARE);    //Configure channel to OUTPURCOMPARE: Channel for OBC read values
+  Timer1.setMode(TIMER_CH4, TIMER_OUTPUT_COMPARE);    //Channel for IMU read values
+  Timer1.setCompare(TIMER_CH3, 1);    //Phase value in Overflow range
+  Timer1.setCompare(TIMER_CH4, 1);
+  
+  Timer1.refresh();   //Refresh timer and start over
+  Timer1.resume();
   
 //▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ Initiations
-  Serial.begin(9600);
+  Serial1.begin(9600);
   SPI.begin();
   delay(5000);
-  Serial.println("START");
+  Serial1.println("START");
   
 //▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ Setups
 
@@ -449,32 +467,32 @@ void setup() {
   pinMode(CS1, OUTPUT);   //NCS Pin definition
 
 //▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒ Driver Setup
-  Serial.println("Configuring Driver...");
+  Serial1.println("Configuring Driver...");
   DriverOne.settings.commInterface = I2C_MODE;    //Driver Comm Mode
   DriverOne.settings.I2CAddress = 0x5D;    //Driver Adress (0x5D by Defalut)
 
   while(DriverOne.begin()!=0xA9){   //Driver wait for idle
-    Serial.println("ID Mismatch");
+    Serial1.println("ID Mismatch");
     delay(200);
   }
-  Serial.println("ID Match");
+  Serial1.println("ID Match");
 
-  Serial.println("Waiting for enumeration");    //Driver wait for peripherals
+  Serial1.println("Waiting for enumeration");    //Driver wait for peripherals
   while(DriverOne.ready()==false);
-  Serial.println("Ready");
+  Serial1.println("Ready");
 
   while(DriverOne.busy());      //Driver enable
   DriverOne.enable();
-  Serial.println("Driver Ready to Use!");
+  Serial1.println("Driver Ready to Use!");
 
 //▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒ IMU Setup
-  Serial.println("Configuring MPU9250...");
+  Serial1.println("Configuring MPU9250...");
   int  status = IMU.begin();
   if (status < 0) {
-    Serial.println("IMU initialization unsuccessful");
-    Serial.println("Check IMU wiring or try cycling power");
-    Serial.print("Status: ");
-    Serial.println(status);   
+    Serial1.println("IMU initialization unsuccessful");
+    Serial1.println("Check IMU wiring or try cycling power");
+    Serial1.print("Status: ");
+    Serial1.println(status);   
     while(1){}
   }
 
@@ -485,46 +503,30 @@ void setup() {
 //▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒ IMU Calibration
    //Use for getting the values on calibration setting below
   IMU.calibrateMag();
-  Serial.println("Done");    
+  Serial1.println("Done");    
  
-  Serial.print(IMU.getMagBiasX_uT());
-  Serial.print(", ");
-  Serial.print(IMU.getMagBiasY_uT());
-  Serial.print(", ");
-  Serial.println(IMU.getMagBiasZ_uT());
+  Serial1.print(IMU.getMagBiasX_uT());
+  Serial1.print(", ");
+  Serial1.print(IMU.getMagBiasY_uT());
+  Serial1.print(", ");
+  Serial1.println(IMU.getMagBiasZ_uT());
 
-  Serial.print(IMU.getMagScaleFactorX());
-  Serial.print(", ");
-  Serial.print(IMU.getMagScaleFactorY());
-  Serial.print(", ");
-  Serial.println(IMU.getMagScaleFactorZ());
+  Serial1.print(IMU.getMagScaleFactorX());
+  Serial1.print(", ");
+  Serial1.print(IMU.getMagScaleFactorY());
+  Serial1.print(", ");
+  Serial1.println(IMU.getMagScaleFactorZ());
 
-  Serial.println("Calibrating MPU9250");
+  Serial1.println("Calibrating MPU9250");
   IMU.setMagCalX(11.27,2.18); //Primer valor el MagBias, y el segundo el ScaleFactor!
   IMU.setMagCalY(-5.27,4.57);
   IMU.setMagCalZ(58.66,0.43);
 
-  Serial.println("MPU9250 Ready to Use!");
-  
-//▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒ Timers
-  Serial.println("Configuring Timers...");
-  Timer1.pause();
-  Timer1.setPrescaleFactor(7200);   //72MHz Clock / 7200 = 10KHz timer
-  Timer1.setOverflow(1000);    //Overflow occurs at 1000, each 100 ms timer restarts
-    
-  Timer1.setMode(TIMER_CH1, TIMER_OUTPUT_COMPARE);    //Configure channel to OUTPURCOMPARE: Channel for OBC read values
-  Timer1.setMode(TIMER_CH2, TIMER_OUTPUT_COMPARE);    //Channel for IMU read values
-  Timer1.setCompare(TIMER_CH1, 1);    //Phase value in Overflow range
-  Timer1.setCompare(TIMER_CH2, 1);
-  
-  //Timer1.attachInterrupt(TIMER_CH1, OBC_mode_receive);  //Interruption for OBC receive of mode
-  Timer1.refresh();   //Refresh timer and start over
-  Timer1.resume();
+  Serial1.println("MPU9250 Ready to Use!");
 
-  Serial.println("Timers Ready to Use!");
-  Serial.println("ADCS Control START");
-  Serial.println("Reading mode from OBC");
+  Timer1.attachInterrupt(TIMER_CH3, OBC_mode_receive);  //Interruption for OBC receive of mode
   mode_OBC_Imput_Wait();
+  
 }
 
 //██████████████████████████████████████████████████████████████████████ VOID LOOP
