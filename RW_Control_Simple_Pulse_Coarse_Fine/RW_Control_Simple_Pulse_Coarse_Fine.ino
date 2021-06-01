@@ -163,7 +163,7 @@ void read_IMU(){
 
   Gpitch += dT*(IMU.getGyroY_rads())*rad_to_deg;
   Groll += dT*(IMU.getGyroX_rads())*rad_to_deg;  
-
+  Gyaw += dT*(IMU.getGyroZ_rads())*rad_to_deg*0.001;
   
   Gpitch = Gpitch + Groll*sin(dT*(IMU.getGyroZ_rads()));   //gimbal lock compensation
   Groll = Groll - Gpitch*sin(dT*(IMU.getGyroZ_rads()));
@@ -172,9 +172,19 @@ void read_IMU(){
   Apitch = asin((float)IMU.getAccelX_mss() / Atotal) * rad_to_deg;                         //Calculate the pitch angle
   Aroll = asin((float)IMU.getAccelY_mss() / Atotal) * rad_to_deg;                         //Calculate the roll angle
 
-  Apitch -= 2.4;
-  Aroll -= -0.9;
-  
+/* Calibracion del acelerometro. */
+
+ // Para calibrar el acelerometro se pone en las variables los valores 0.0 y se descomenta los 3 prints.
+ // Al compilar, deja la IMU inmobil para que se calibre correctamente el giroscopio.
+ // Una vez obtenidos lo valores, se anotan y se vuelve a compilar como se habia dejado antes.
+ 
+   Apitch -= 2.62;
+   Aroll -= 4.01;
+
+  //   Serial.print(Apitch,6);
+  //   Serial.print("\t");
+  //   Serial.println(Aroll,6);
+
   if (Gyro_sync)
   {
     // ----- Gyro & accel have been synchronised
@@ -185,13 +195,41 @@ void read_IMU(){
     // ----- Synchronise gyro & accel
     Gpitch = Apitch;                                       //Set the gyro pitch angle equal to the accelerometer pitch angle
     Groll = Aroll;                                         //Set the gyro roll angle equal to the accelerometer roll angle
-  
     Gyro_sync = true;                                      //Set the IMU started flag
   }
 
   G_pitch_output = G_pitch_output * 0.9 + Gpitch * 0.1;    
   G_roll_output = G_roll_output * 0.9 + Groll * 0.1;  
 
+/*  //FOR PCB
+  Mpitch = -G_roll_output * deg_to_rad;
+  Mroll = G_pitch_output * deg_to_rad;
+
+  M_x_eq = IMU.getMagX_uT() * cos(Mpitch) + IMU.getMagY_uT() * sin(Mroll) * sin(Mpitch) - IMU.getMagZ_uT() * cos(Mroll) * sin(Mpitch);
+  M_y_eq = IMU.getMagY_uT() * cos(Mroll) + IMU.getMagZ_uT() * sin(Mroll);
+
+  // Amortigua los valores del mismo modo que G_pitch_output.
+
+  Mag_x_damp = Mag_x_damp * 0.9 + M_x_eq * 0.1;  
+  Mag_y_damp = Mag_y_damp * 0.9 + M_y_eq * 0.1;
+
+  // El norte magnetico se ha modificado, originalmente, era de x a y (hacia que la lectura 0 estuviese 90 grados desplazada) 
+  // y sin el negativo del principio (hacia que la lectura sumase los angulos en sentido antihorario en vez de horario).
+
+  Heading = -atan2(Mag_y_damp, Mag_x_damp) * rad_to_deg;
+
+  // Si se quiere ser preciso del todo, se añade la declinacion del lugar geografico en el que nos encontramos (https://www.ign.es/web/gmt-declinacion-magnetica)
+  
+  //Heading += Declination; 
+                            
+  // Las siguientes dos lineas contienen el valor de heading entre 0 y 360 grados.
+  
+  if (Heading < 0) Heading += 360;
+  if (Heading >= 360) Heading -= 360; 
+
+  */
+
+  /*  //FOR HOME
   //ONLY ACCOUNTS GYROSCOPE, NO CORRECTION BUT ATTEMPS TO CORRECT WITH MAG 
   //It seems mag does not work properly, as values in each orientation do not correlate even with calibration from library
   //However, acc in x and y can be used to tell the adcs if the cubesat is or is not rotating, so we can correct the gyro drift.
@@ -219,6 +257,7 @@ void read_IMU(){
 
   if (IMU_deg_data_Z < 0) IMU_deg_data_Z += 360;
   if (IMU_deg_data_Z >= 360) IMU_deg_data_Z -= 360;
+  */
   
   IMU_accel_data_X=Apitch;
   IMU_accel_data_Y=Aroll;
@@ -328,18 +367,6 @@ if (degree_to_reach >= 360) degree_to_reach -= 360;
   // Save current error and time for next iteration
   lastError = error;          // Save current error
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 //▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ MODES OF OPERATION
 //▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒ Mode Selection
@@ -661,18 +688,30 @@ void setup() {
 
 //▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒ IMU Calibration
    //Use for getting the values on calibration setting below
-  
-  IMU.calibrateAccel();
-  IMU.setAccelCalX(IMU.getAccelBiasX_mss(),IMU.getAccelScaleFactorX()); //Primer valor el MagBias, y el segundo el ScaleFactor!
-  IMU.setAccelCalY(IMU.getAccelBiasY_mss(),IMU.getAccelScaleFactorY());
-  IMU.setAccelCalZ(IMU.getAccelBiasZ_mss(),IMU.getAccelScaleFactorZ());
-  
-  IMU.calibrateGyro();
-  IMU.setGyroBiasX_rads(IMU.getGyroBiasX_rads());
-  IMU.setGyroBiasY_rads(IMU.getGyroBiasY_rads());
-  IMU.setGyroBiasZ_rads(IMU.getGyroBiasZ_rads());
-  
-  IMU.calibrateMag(); 
+
+   // Para calibrar el magnetometro o la brujula se comenta todo excepto las 3 ultimas lineas.
+ // Se mueve en forma de ocho aproximadamente unos 2 min. Se recomienda realizar varias veces hasta afinar las medidas.
+ // Se descomenta todo y se pone los valores obtenidos del MagBias y ScaleFactor para visualizar los resultados del magnetometro.
+ 
+  //IMU.calibrateMag(); 
+  // Serial.println("Done");    
+//   
+//  Serial.print(IMU.getMagBiasX_uT());
+//  Serial.print(",");
+//  Serial.print(IMU.getMagBiasY_uT());
+//  Serial.print(",");
+//  Serial.println(IMU.getMagBiasZ_uT());
+//   
+//  Serial.print(IMU.getMagScaleFactorX());
+//  Serial.print(",");
+//  Serial.print(IMU.getMagScaleFactorY());
+//  Serial.print(",");
+//  Serial.println(IMU.getMagScaleFactorZ());
+
+    IMU.setMagCalX(7.59,1.04); // El primer valor corresponde al MagBias, y el segundo el ScaleFactor.
+    IMU.setMagCalY(10.29,0.91);
+    IMU.setMagCalZ(-22.11,1.07);   
+}
   IMU.setMagCalX(IMU.getMagBiasX_uT(),IMU.getMagScaleFactorX()); //Primer valor el MagBias, y el segundo el ScaleFactor!
   IMU.setMagCalY(IMU.getMagBiasY_uT(),IMU.getMagScaleFactorY());
   IMU.setMagCalZ(IMU.getMagBiasZ_uT(),IMU.getMagScaleFactorZ());
