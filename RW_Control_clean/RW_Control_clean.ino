@@ -7,7 +7,7 @@
  * STM32 Bluepill microcontroller package from http://dan.drown.org/stm32duino/package_STM32duino_index.json
  * SCMD Driver library by SparkFun used (https:// github.com/sparkfun/SparkFun_Serial1_Controlled_Motor_Driver_Arduino_Library)
  * MPU9250 IMU library by Rafa Castalla used (https://github.com/rafacastalla/MPU9250-1)
- * read_IMU() and IMU setup content code extraconstantd from Andrés Gómez and Miquel Reurer, from the PLATHON group (magnetorquers section)
+ * read_IMU() and IMU setup content code extracted from Andrés Gómez and Miquel Reurer, from the PLATHON group (magnetorquers section)
  */
 
 // ██████████████████████████████████████████████████████████████████████ DEFINITIONS
@@ -55,8 +55,8 @@ int OBC_mode_value = 0; // Value of On Board Computer mode (waiting, positioning
 int OBC_data_value = 0; // Value of On Board Computer data (desired angle turn, etc.)
 
 // PID control definitions
-double PID_error, PID_last_error;           // Initialize error and previousError
-double PID_cumulative_error, PID_rat_error; // Initialize the cumulative Error (Integral) and the rate of Error (Derivative)
+double PID_error, PID_last_error;            // Initialize error and previousError
+double PID_cumulative_error, PID_rate_error; // Initialize the cumulative Error (Integral) and the rate of Error (Derivative)
 
 double kp = 3; // Proportional contribution
 double ki = 4; // Integral contribution
@@ -378,17 +378,15 @@ void computePID()
   if (Zero_state)
   {
     // Saves if the pid pass through 0, if it does it moves the zone away from 0
-    Yaw_deg + 180; // Addition of 180 deg to all values. The error is a substract, so the difference is the same
-    Deg_to_reach + 180;
+    // New variable to not modify the Yaw_deg value
+    float Current_Yaw_deg = Yaw_deg + 180; // Addition of 180 deg to all values. The error is a substract, so the difference is the same
   }
 
-  if (Yaw_deg >= 360)
-    Yaw_deg -= 360; // One of them will increase over 360, it is a correction
-  if (Deg_to_reach >= 360)
-    Deg_to_reach -= 360;
+  if (Current_Yaw_deg >= 360)
+    Current_Yaw_deg -= 360; // One of them will increase over 360, it is a correction
 
   // Percentage
-  volatile float Yaw_deg_perc = (Yaw_deg - 360) / (-360) * 100;
+  volatile float Yaw_deg_perc = (Current_Yaw_deg - 360) / (-360) * 100;
 
   // Transform angle to percentage (Deg_to_reach == setPoint)
   volatile float Deg_to_reach_perc = (Deg_to_reach - 360) / (-360) * 100;
@@ -403,19 +401,22 @@ void computePID()
   float PID_I = ki * PID_cumulative_error; // Integral
   float PID_D = kd * PID_rate_error;       // Derivative
 
-  // Ensure not overflow
-  if (PID_P > 255)
-    PID_P = 255;
-  if (PID_P < -255)
-    PID_P = -255;
-  if (PID_I > 255)
-    PID_I = 255;
-  if (PID_I < -255)
-    PID_I = -255;
-  if (PID_D > 255)
-    PID_D = 255;
-  if (PID_D < -255)
-    PID_D = -255;
+  /*
+    // Limit 
+    // Ensure not overflow
+    if (PID_P > 255)
+      PID_P = 255;
+    if (PID_P < -255)
+      PID_P = -255;
+    if (PID_I > 255)
+      PID_I = 255;
+    if (PID_I < -255)
+      PID_I = -255;
+    if (PID_D > 255)
+      PID_D = 255;
+    if (PID_D < -255)
+      PID_D = -255;
+  */
 
   PID_output = PID_P + PID_I + PID_D; //  PID control
 
@@ -668,7 +669,7 @@ void positioning_Coarse()
 
       Timer1.attachInterrupt(TIMER_CH4, read_IMU);
       while (waiting)
-      { // Stays as long as waitin is true.
+      { // Stays as long as waiting is true.
         Serial1.println("Waiting");
 
         // CAUTION WITH READING VALUES; AS IT IS ALWAYS FROM 0 TO 360
@@ -741,8 +742,8 @@ void positioning_Coarse()
   Serial1.println(Final_IMU_degree_value);
 
   if ((Delta_degree_ramp - degree_turn_value) < Final_pointing_tolerancy && (Delta_degree_ramp - degree_turn_value) > Final_pointing_tolerancy)
-  {                              // Real turn vs wanted turn, checks if it is considered good
-    mode_Select(OBC_mode_value); // Valid position
+  {                        // Real turn vs wanted turn, checks if it is considered good
+    mode_OBC_Input_Wait(); // Valid position
   }
   else
   {
@@ -782,10 +783,17 @@ void positioning_Fine()
     Zero_state = false;
   }
 
+  if (Zero_state)
+  {
+    Deg_to_reach + 180;
+    if (Deg_to_reach >= 360)
+      Deg_to_reach -= 360;
+  }
+
   Timer1.attachInterrupt(TIMER_CH4, computePID);
   while (waiting)
   { // Range of tolerancy
-    if (abs(IMU_gyro_data_Z) > Gyro_tolerancy && abs(IMU_accel_data_X) < Accel_tolerancy)
+    if (abs(IMU_gyro_data_Z) < Gyro_tolerancy && abs(IMU_accel_data_X) < Accel_tolerancy)
     { // we consider it is stopped, modify values to be accurate
       waiting = false;
     }
