@@ -570,7 +570,7 @@ void positioning_Coarse()
 
   Serial1.println("Mode Positioning Coarse");
 
-  // Stores a new variable to not overwrite the original value
+  // Stores a new variable to not overwrite the original value, also for motor as it needs a positive value and direction
   float degree_turn_value = OBC_data_value;
   bool RW_direction = true; // true=positive (CCW), false=negative (CW)
                             // In case OBC_data_value is positive, value remains the same and rw direction is true, the default value of the variable
@@ -597,6 +597,14 @@ void positioning_Coarse()
   // This values will be substituted by how we want the time and speed to reach in the ramp.
   read_IMU();
   Final_IMU_degree_value = Yaw_deg; // Stores final degree, only in Z
+
+  Delta_degree_ramp = Final_IMU_degree_value - Initial_IMU_degree_value; // degree turnt on acc, only in Z.
+
+  if (RW_direction == false) // RW Clockwise
+  {
+    Delta_degree_ramp = Final_IMU_degree_value - Initial_IMU_degree_value; // degree turnt on acc, only in Z. Should be positive
+  }
+
   if (RW_direction)
   {
     Delta_degree_ramp = Final_IMU_degree_value - Initial_IMU_degree_value; // degree turnt on acc, only in Z. Should be positive
@@ -619,11 +627,29 @@ void positioning_Coarse()
   Serial1.print(" / ED: ");
   Serial1.println(Final_IMU_degree_value); // Final, End angle
   // --------------------------------------------------------------WAITING
-  waiting = true;
-  if (RW_direction)
-  { // CASE CCW
-    if ((degree_turn_value - 2 * Delta_degree_ramp) > 0)
-    {                                                                                          // if its <0, it must be done immediately after, and still it would be too much turn.
+  if ((degree_turn_value - 2 * Delta_degree_ramp) > 0) // if it is <0, skip the waiting phase, deceleration must be done immediately after, and still it would be too much turn.
+  {
+    waiting = true;
+    if (RW_direction)
+    {
+      // CASE CCW
+
+      /*
+      RW CCW
+      CB CW
+      IMU positive
+
+      Angulo inicial 300º
+
+      gira 150º en sentido CB CW = degree_turn_value
+
+      angulo final acc 350º = Final_IMU_degree_value
+
+      Delta_degree_ramp=350-300=50
+
+      Degree_stop_wait=350+(150-2*50)=400;  40
+
+      */
       Degree_stop_wait = Final_IMU_degree_value + (degree_turn_value - 2 * Delta_degree_ramp); // Get value of degree to start
 
       Timer1.attachInterrupt(TIMER_CH4, read_IMU);
@@ -660,11 +686,10 @@ void positioning_Coarse()
       }
       Timer1.detachInterrupt(TIMER_CH4);
     }
-  }
-  else
-  { // CASE CW
-    if ((degree_turn_value - 2 * Delta_degree_ramp) > 0)
-    {                                                                                          // if its <0, it must be done immediately after, and still it would be too much turn.
+    else
+    {
+      // CASE CW
+      // if its <0, it must be done immediately after, and still it would be too much turn.
       Degree_stop_wait = Final_IMU_degree_value - (degree_turn_value - 2 * Delta_degree_ramp); // Get value of degree to start
 
       Timer1.attachInterrupt(TIMER_CH4, read_IMU);
