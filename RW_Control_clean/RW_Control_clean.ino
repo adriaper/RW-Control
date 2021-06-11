@@ -57,6 +57,7 @@ int OBC_data_value = 0; // Value of On Board Computer data (desired angle turn, 
 // PID control definitions
 double PID_error, PID_last_error;            // Initialize error and previousError
 double PID_cumulative_error, PID_rate_error; // Initialize the cumulative Error (Integral) and the rate of Error (Derivative)
+float Current_Yaw_deg = 0;                   // Addition of 180 deg to all values. The error is a substract, so the difference is the same
 
 double kp = 3; // Proportional contribution
 double ki = 4; // Integral contribution
@@ -374,12 +375,14 @@ void computePID()
 
   read_IMU();
 
+  Current_Yaw_deg = Yaw_deg;
+
   // Check if PID passes through 0 degrees
   if (Zero_state)
   {
     // Saves if the pid pass through 0, if it does it moves the zone away from 0
     // New variable to not modify the Yaw_deg value
-    float Current_Yaw_deg = Yaw_deg + 180; // Addition of 180 deg to all values. The error is a substract, so the difference is the same
+    Current_Yaw_deg = Yaw_deg + 180; // Addition of 180 deg to all values. The error is a substract, so the difference is the same
   }
 
   if (Current_Yaw_deg >= 360)
@@ -925,9 +928,6 @@ void setup()
   IMU.setMagCalY(10.29, 0.91);
   IMU.setMagCalZ(-22.11, 1.07);
 }
-IMU.setMagCalX(IMU.getMagBiasX_uT(), IMU.getMagScaleFactorX()); // Primer valor el MagBias, y el segundo el ScaleFactor!
-IMU.setMagCalY(IMU.getMagBiasY_uT(), IMU.getMagScaleFactorY());
-IMU.setMagCalZ(IMU.getMagBiasZ_uT(), IMU.getMagScaleFactorZ());
 
 Serial1.println("MPU9250 Ready to Use!");
 
