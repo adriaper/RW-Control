@@ -18,6 +18,7 @@
 #include <SCMD_config.h> // Serial Controlled Motor Driver Configuration library
 #include <SPI.h>         // SPI library
 #include <MPU9250.h>     // IMU library
+#include<Wire.h>
 
 // ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ DEFINITIONS
 #define LEDPIN PC13                // Integrated LED of the Bluepill
@@ -927,7 +928,6 @@ void setup()
   IMU.setMagCalX(7.59, 1.04); // The first value corresponds to the MagBias, and the second the ScaleFactor.
   IMU.setMagCalY(10.29, 0.91);
   IMU.setMagCalZ(-22.11, 1.07);
-}
 
 Serial1.println("MPU9250 Ready to Use!");
 
