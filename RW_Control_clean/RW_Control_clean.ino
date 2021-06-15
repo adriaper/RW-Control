@@ -18,7 +18,7 @@
 #include <SCMD_config.h> // Serial Controlled Motor Driver Configuration library
 #include <SPI.h>         // SPI library
 #include <MPU9250.h>     // IMU library
-#include<Wire.h>
+#include <Wire.h>
 
 // ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ DEFINITIONS
 #define LEDPIN PC13                // Integrated LED of the Bluepill
@@ -124,7 +124,7 @@ void OBC_data_receive()
 void set_impulse(bool RW_direction, int New_RW_speed)
 {
   /*
-    Function to set the motor at a fixed direction and speed
+    Function to set the motor at a fixed direction and speed (B = port 1, A = port 0)
 
     INPUT: 
       RW_direction: Reaction Wheel direction [Clockwise or Counter Clockwise]
@@ -136,12 +136,12 @@ void set_impulse(bool RW_direction, int New_RW_speed)
   // Account for change in direction
   if (RW_direction) // Reaction Wheel Counter Clock Wise
   {
-    DriverOne.setDrive(0, 0, New_RW_speed); // Change direction depending on motor connection
+    DriverOne.setDrive(1, 0, New_RW_speed); // Change direction depending on motor connection
     RW_speed = New_RW_speed;
   }
   else // Reaction Wheel Clock Wise
   {
-    DriverOne.setDrive(0, 1, New_RW_speed);
+    DriverOne.setDrive(1, 1, New_RW_speed);
     RW_speed = -New_RW_speed;
   }
 }
@@ -245,16 +245,16 @@ void read_IMU()
 
   /* Accelerometer calibration */
 
-  // To calibrate the accelerometer, put the values ​​0.0 in the variables and uncomment the 3 Serial.prints
+  // To calibrate the accelerometer, put the values ​​0.0 in the variables and uncomment the 3 Serial1.prints
   // When compiling, leave the IMU immobile so that the accelerometer calibrates properly.
   // Once the values ​​are obtained, they are noted and it is recompiled as it had been before.
 
-  Accel_pitch_deg -= 2.62;
-  Accel_roll_deg -= 4.01;
+  Accel_pitch_deg -= -0.85;
+  Accel_roll_deg -= 10.55;
 
-  //    Serial.print(Accel_pitch_deg,6);
-  //    Serial.print("\t");
-  //    Serial.println(Accel_roll_deg,6);
+  //      Serial1.print(Accel_pitch_deg,6);
+  //      Serial1.print("\t");
+  //      Serial1.println(Accel_roll_deg,6);
 
   // If gyroscope and accelerometer are synchronized
   if (Gyro_Accel_sync)
@@ -313,11 +313,11 @@ void show_IMU()
   */
 
   // Print accelerometer values
-  Serial1.print("Acc: ");
-  Serial1.print(IMU_accel_data_X, 4);
-  Serial1.print('\t');
-  Serial1.print(IMU_accel_data_Y, 4);
-  Serial1.print('\t');
+  //  Serial1.print("Acc: ");
+  //  Serial1.print(IMU_accel_data_X, 4);
+  //  Serial1.print('\t');
+  //  Serial1.print(IMU_accel_data_Y, 4);
+  //  Serial1.print('\t');
   // Serial1.print(IMU_accel_data_Z,4);
   // Serial1.println("");
 
@@ -330,18 +330,18 @@ void show_IMU()
   // Serial1.println("");
 
   // Print Mag values
-  // Serial1.print("MAGS: ");
-  // Serial1.print(IMU_mag_data_X,4);    Serial1.print('\t');
-  // Serial1.print(IMU_mag_data_Y,4);    Serial1.println('\t');
-  // Serial1.print(IMU_mag_data_Z,4);
-  // Serial1.println("");
+  //   Serial1.print("MAGS: ");
+  //   Serial1.print(IMU_mag_data_X,4);    Serial1.print(';');
+  //   Serial1.print(IMU_mag_data_Y,4);    Serial1.print(';');
+  //   Serial1.print(IMU_mag_data_Z,4);
+  //   Serial1.println("");
 
   // Print orientation angles
-  // Serial1.print(" / D: ");
-  // Serial1.print(Pitch_deg,4);
-  // Serial1.print(Roll_deg,4);
-  // Serial1.print(Yaw_deg,4);
-  Serial1.println("");
+     Serial1.print(" / D: ");
+     Serial1.print(Pitch_deg,4);            Serial1.print(';');
+     Serial1.print(Roll_deg,4);             Serial1.print(';');
+     Serial1.print(Yaw_deg,4);
+    Serial1.println("");
 }
 
 void read_show_IMU()
@@ -488,6 +488,15 @@ void mode_IMU_reading()
   Timer1.attachInterrupt(TIMER_CH4, read_show_IMU);
   // read_show_IMU();
   // mode_Select(OBC_mode_value);
+  set_impulse(0, 255);
+  OBC_data_receive();
+  while (OBC_data_value == 0)
+  {
+    delay(1); // If not used the while function does not work
+  }
+  set_impulse(0,0);
+  OBC_data_value = 0;
+  mode_OBC_Input_Wait();
 }
 
 void mode_OBC_Input_Wait()
@@ -909,30 +918,30 @@ void setup()
   // To calibrate the magnetometer or the compass, everything is commented except the last 3 lines.
   // It moves in the shape of an eight approximately 2 min. It is recommended to carry out several times until the measurements are fine-tuned.
   // Uncomment everything and enter the values ​​obtained from the MagBias and ScaleFactor to view the results of the magnetometer.
-
-  // IMU.calibrateMag();
-  //  Serial.println("Done");
   //
-  //   Serial.print(IMU.getMagBiasX_uT());
-  //   Serial.print(",");
-  //   Serial.print(IMU.getMagBiasY_uT());
-  //   Serial.print(",");
-  //   Serial.println(IMU.getMagBiasZ_uT());
-  //
-  //   Serial.print(IMU.getMagScaleFactorX());
-  //   Serial.print(",");
-  //   Serial.print(IMU.getMagScaleFactorY());
-  //   Serial.print(",");
-  //   Serial.println(IMU.getMagScaleFactorZ());
+  //    IMU.calibrateMag();
+  //    Serial1.println("Done");
+  //  
+  //    Serial1.print(IMU.getMagBiasX_uT());
+  //    Serial1.print(",");
+  //    Serial1.print(IMU.getMagBiasY_uT());
+  //    Serial1.print(",");
+  //    Serial1.println(IMU.getMagBiasZ_uT());
+  //  
+  //    Serial1.print(IMU.getMagScaleFactorX());
+  //    Serial1.print(",");
+  //    Serial1.print(IMU.getMagScaleFactorY());
+  //    Serial1.print(",");
+  //    Serial1.println(IMU.getMagScaleFactorZ());
 
-  IMU.setMagCalX(7.59, 1.04); // The first value corresponds to the MagBias, and the second the ScaleFactor.
-  IMU.setMagCalY(10.29, 0.91);
-  IMU.setMagCalZ(-22.11, 1.07);
+  IMU.setMagCalX(24.48, 1.26); // The first value corresponds to the MagBias, and the second the ScaleFactor.
+  IMU.setMagCalY(11.26, 0.86);
+  IMU.setMagCalZ(-24.11, 0.96);
 
-Serial1.println("MPU9250 Ready to Use!");
+  Serial1.println("MPU9250 Ready to Use!");
 
-Serial1.println("Reading mode from OBC");
-mode_OBC_Input_Wait();
+  Serial1.println("Reading mode from OBC");
+  mode_OBC_Input_Wait();
 }
 
 // ██████████████████████████████████████████████████████████████████████ VOID LOOP
