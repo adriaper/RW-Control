@@ -485,15 +485,16 @@ void mode_IMU_reading()
   */
 
   OBC_mode_value = 0;
-  Timer1.attachInterrupt(TIMER_CH4, read_show_IMU);
+//  Timer1.attachInterrupt(TIMER_CH4, read_show_IMU);
   // read_show_IMU();
   // mode_Select(OBC_mode_value);
   set_impulse(0, 255);
-  OBC_data_receive();
+  Timer1.attachInterrupt(TIMER_CH3, OBC_data_receive);
   while (OBC_data_value == 0)
   {
     delay(1); // If not used the while function does not work
   }
+    Timer1.detachInterrupt(TIMER_CH3);
   set_impulse(0,0);
   OBC_data_value = 0;
   mode_OBC_Input_Wait();
