@@ -54,6 +54,7 @@ float Pitch_rad, Roll_rad;              // Pitch and Roll angles (rad)
 int RW_speed = 0;       // Value of Reaction Wheel speed [from -255 to 255]
 int OBC_mode_value = 0; // Value of On Board Computer mode (waiting, positioning, detumbling, etc.)
 int OBC_data_value = 0; // Value of On Board Computer data (desired angle turn, etc.)
+int Stop_state = 0;     // If Stop_state != 0, motor stops rotating
 
 // PID control definitions
 double PID_error, PID_last_error;            // Initialize error and previousError
@@ -67,6 +68,8 @@ double kd = 0; // Derivative contribution
 float Deg_to_reach = 0;  // Setpoint angle (degrees)
 bool Zero_state = false; // Check if PID encompass yaw of 0 degrees (to turn the value to a workable zone)
 int PID_output = 0;      // Output value of the PID [from 0 to 255]
+
+void (*resetFunc)(void) = 0; //declare reset function @ address 0
 
 // ██████████████████████████████████████████████████████████████████████ FUNCTIONS
 // ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ GENERAL USE FUNCTIONS
@@ -117,6 +120,45 @@ void OBC_data_receive()
     OBC_data_value = bufferString.toInt(); // Conversion from String to int
     Serial1.print("Value to turn: ");      // In this case turn, but can be what is needed
     Serial1.println(OBC_data_value);
+  }
+}
+
+void EmergencyStop()
+{
+  /*
+    Function to STOP the motor from rotating.
+
+    INPUT: None, but gets data from User Serial1 input
+    OUTPUT: Save OBC_data_value
+  */
+
+  // Check if UART Serial1 is available
+  if (Serial1.available() > 0)
+  {
+    String bufferString = ""; // String for buffer of Serial1
+    // Keep saving input prompt
+    while (Serial1.available() > 0)
+    {
+      bufferString += (char)Serial1.read(); // adds chars to the Serial1 buffer
+    }
+    Stop_state = bufferString.toInt(); // Conversion from String to int
+    Serial1.print("Value to turn: ");  // In this case turn, but can be what is needed
+    Serial1.println(Stop_state);
+  }
+
+  //  Timer1.attachInterrupt(TIMER_CH4, read_show_IMU);
+  // read_show_IMU();
+  // mode_Select(OBC_mode_value);
+
+  if (Stop_state != 0)
+  {
+    // If it stopped
+    set_impulse(0, 0);
+    Stop_state = 0;
+    OBC_data_value = 0;
+    Timer1.detachInterrupt(TIMER_CH3);
+    resetFunc();
+    mode_OBC_Input_Wait();
   }
 }
 
@@ -562,6 +604,9 @@ void mode_Positioning_RW()
   }
   Timer1.detachInterrupt(TIMER_CH3);
 
+  // Initiate EmergencyStop routine
+  Timer1.attachInterrupt(TIMER_CH3, EmergencyStop);
+
   // Depend on the tolerancy enable Fine or Coarse positioning
   if (abs(OBC_data_value) <= Pointing_mode_tolerancy)
   {
@@ -608,7 +653,7 @@ void positioning_Coarse()
   read_show_IMU();
   Initial_IMU_degree_value = Yaw_deg; // Stores initial degree, only in Z
   int initial_RW_speed = RW_speed;
-  generate_ramp(RW_direction, 0, 255, 1);
+  generate_ramp(RW_direction, 0, 20, 1);
   // 0 will not be used as we dont define the time the motor lasts to do an impulse. 255 is the max value
   // This values will be substituted by how we want the time and speed to reach in the ramp.
   read_IMU();
@@ -783,7 +828,11 @@ void positioning_Coarse()
   Serial1.println(Final_IMU_degree_value);
 
   if ((Delta_degree_ramp - degree_turn_value) < Final_pointing_tolerancy && (Delta_degree_ramp - degree_turn_value) > Final_pointing_tolerancy)
-  {                        // Real turn vs wanted turn, checks if it is considered good
+  {
+    // Detach EmergencyStop
+    Timer1.detachInterrupt(TIMER_CH3);
+
+    // Real turn vs wanted turn, checks if it is considered good
     mode_OBC_Input_Wait(); // Valid position
   }
   else
@@ -846,6 +895,10 @@ void positioning_Fine()
   // At exit, RW_speed could not be 0
   OBC_data_value = 0;
   Serial1.println("End of manoeuvre");
+
+  // Detach EmergencyStop
+  Timer1.detachInterrupt(TIMER_CH3);
+
   mode_Select(OBC_mode_value);
 }
 
