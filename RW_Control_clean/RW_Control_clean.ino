@@ -7,7 +7,7 @@
  * STM32 Bluepill microcontroller package from http://dan.drown.org/stm32duino/package_STM32duino_index.json
  * SCMD Driver library by SparkFun used (https:// github.com/sparkfun/SparkFun_Serial1_Controlled_Motor_Driver_Arduino_Library)
  * MPU9250 IMU library by Rafa Castalla used (https://github.com/rafacastalla/MPU9250-1)
- * read_IMU() and IMU setup content code extracted from Andrés Gómez and Miquel Reurer, from the PLATHON group (magnetorquers section)
+ * read_IMU() and IMU setup content code extracted from Andres Gomez and Miquel Reurer, from the PLATHON group (magnetorquers section)
  */
 
 // ██████████████████████████████████████████████████████████████████████ DEFINITIONS
