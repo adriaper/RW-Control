@@ -927,12 +927,10 @@ void setup()
   IMU.setMagCalX(7.59, 1.04); // The first value corresponds to the MagBias, and the second the ScaleFactor.
   IMU.setMagCalY(10.29, 0.91);
   IMU.setMagCalZ(-22.11, 1.07);
-}
 
-Serial1.println("MPU9250 Ready to Use!");
-
-Serial1.println("Reading mode from OBC");
-mode_OBC_Input_Wait();
+  Serial1.println("MPU9250 Ready to Use!");
+  Serial1.println("Reading mode from OBC");
+  mode_OBC_Input_Wait();
 }
 
 // ██████████████████████████████████████████████████████████████████████ VOID LOOP
