@@ -493,6 +493,34 @@ void computePID()
 }
 
 // ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ MODES OF OPERATION FUNCTIONS
+void mode_OBC_Input_Wait()
+{
+  /*
+    0. Default mode, OBC Reading
+
+    INPUT: 
+    None
+    OUTPUT: 
+    None, but exits to mode_Select
+  */
+  if (Stop_state != 0)
+  {
+    Stop_state = 0;
+    Timer1.detachInterrupt(TIMER_CH3);
+  }
+  OBC_mode_value = 0;
+  Timer1.attachInterrupt(TIMER_CH3, OBC_mode_receive);
+  while (OBC_mode_value == 0)
+  {
+    delay(1); // If not used the while function does not work
+    // it can be added more conditions to evade being blocked until a data is received.
+    // for example, it could function an interrupt with a forced exit and an if after or something
+  }
+  Timer1.detachInterrupt(TIMER_CH3);
+  Serial1.println(OBC_mode_value);
+  mode_Select(OBC_mode_value);
+}
+
 void mode_Select(int mode_value)
 {
   /*
@@ -523,74 +551,6 @@ void mode_Select(int mode_value)
     mode_motor_on_off();
     break;
   }
-}
-
-void mode_motor_on_off()
-{
-  /*
-    TEST PURPOSE Function
-
-    INPUT: 
-    None
-    OUTPUT: 
-    None, but saves IMU variables and Roll, Pitch and Yaw
-  */
-
-  OBC_mode_value = 0;
-  set_impulse(0, 255);
-  Timer1.attachInterrupt(TIMER_CH3, OBC_data_receive);
-  while (OBC_data_value == 0)
-  {
-    delay(1); // If not used the while function does not work
-  }
-  Timer1.detachInterrupt(TIMER_CH3);
-  set_impulse(0, 0);
-  OBC_data_value = 0;
-  mode_OBC_Input_Wait();
-}
-
-void mode_IMU_reading()
-{
-  /*
-    TEST PURPOSE Function
-
-    INPUT: 
-    None
-    OUTPUT: 
-    None, but saves IMU variables and Roll, Pitch and Yaw
-  */
-
-  OBC_mode_value = 0;
-  read_show_IMU();
-  mode_Select(OBC_mode_value);
-}
-
-void mode_OBC_Input_Wait()
-{
-  /*
-    0. Default mode, OBC Reading
-
-    INPUT: 
-    None
-    OUTPUT: 
-    None, but exits to mode_Select
-  */
-  if (Stop_state != 0)
-  {
-    Stop_state = 0;
-    Timer1.detachInterrupt(TIMER_CH3);
-  }
-  OBC_mode_value = 0;
-  Timer1.attachInterrupt(TIMER_CH3, OBC_mode_receive);
-  while (OBC_mode_value == 0)
-  {
-    delay(1); // If not used the while function does not work
-    // it can be added more conditions to evade being blocked until a data is received.
-    // for example, it could function an interrupt with a forced exit and an if after or something
-  }
-  Timer1.detachInterrupt(TIMER_CH3);
-  Serial1.println(OBC_mode_value);
-  mode_Select(OBC_mode_value);
 }
 
 void mode_Positioning_RW()
@@ -928,6 +888,46 @@ void positioning_Fine()
   Timer1.detachInterrupt(TIMER_CH3);
 
   mode_Select(OBC_mode_value);
+}
+
+void mode_IMU_reading()
+{
+  /*
+    2- IMU reading (TEST PURPOSE Function) 
+
+    INPUT: 
+    None
+    OUTPUT: 
+    None, but saves IMU variables and Roll, Pitch and Yaw
+  */
+
+  OBC_mode_value = 0;
+  read_show_IMU();
+  mode_Select(OBC_mode_value);
+}
+
+void mode_motor_on_off()
+{
+  /*
+    3- Motor ON/OFF (TEST PURPOSE Function)
+
+    INPUT: 
+    None
+    OUTPUT: 
+    None
+  */
+
+  OBC_mode_value = 0;
+  set_impulse(0, 255);
+  Timer1.attachInterrupt(TIMER_CH3, OBC_data_receive);
+  while (OBC_data_value == 0)
+  {
+    delay(1); // If not used the while function does not work
+  }
+  Timer1.detachInterrupt(TIMER_CH3);
+  set_impulse(0, 0);
+  OBC_data_value = 0;
+  mode_OBC_Input_Wait();
 }
 
 // ██████████████████████████████████████████████████████████████████████ VOID SETUP
