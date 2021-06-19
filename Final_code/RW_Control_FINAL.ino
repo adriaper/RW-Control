@@ -22,7 +22,7 @@
 
 // ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ DEFINITIONS
 #define LEDPIN PC13                // Integrated LED of the Bluepill
-#define CS1 PA4                    // STM32 NCS Chip select (SPI mode only) pin. MOSI on PA7, MISO on PA6 and CLK on PA5 by default on STM32
+#define CS1 4                    // STM32 NCS Chip select (SPI mode only) pin. MOSI on PA7, MISO on PA6 and CLK on PA5 by default on STM32
 #define STM32_CLOCK 72000          // Internal STM32 Clock (72MHz, in kHz so period is millisec)
 #define PI 3.14159265              // Number PI
 #define Rad_to_deg 57.29577951     // Convert radians to degrees
@@ -33,11 +33,10 @@
 #define Gyro_tolerancy 1           // Tolerancy for gyro measurement (+-1 unit of gyroscope Z tolerancy) (Accounts to know if it is rotating or not at a constant speed for the ramp)
 
 SCMD DriverOne;      // Driver Object definition
-MPU9250 IMU(SPI, 4); // MPU object definition
+MPU9250 IMU(SPI, CS1); // MPU object definition
 
 // ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ GLOBAL VARIABLES
-float IMU_accel_data_X,
-    IMU_accel_data_Y, IMU_accel_data_Z;                  // Values of local IMU accelerometer (m/s^2)
+float IMU_accel_data_X, IMU_accel_data_Y, IMU_accel_data_Z;                  // Values of local IMU accelerometer (m/s^2)
 float IMU_gyro_data_X, IMU_gyro_data_Y, IMU_gyro_data_Z; // Values of local IMU gyroscope (degrees/s)
 float IMU_mag_data_X, IMU_mag_data_Y, IMU_mag_data_Z;    // Values of local IMU magnetometer (uT)
 float Pitch_deg, Roll_deg, Yaw_deg = 0;                  // Pitch, Roll and Yaw (degrees)
