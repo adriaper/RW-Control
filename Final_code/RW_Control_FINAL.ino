@@ -27,10 +27,10 @@
 #define PI 3.14159265              // Number PI
 #define Rad_to_deg 57.29577951     // Convert radians to degrees
 #define Deg_to_rad 0.01745329      // Convert degrees to radians
-#define Final_pointing_tolerancy 1 // Tolerancy for final pointing (+-1 degree of tolerancy) (Check if position is within the margin)
-#define Pointing_mode_tolerancy 5  // Tolerancy for selecting pointing mode (+-5 degree of tolerancy) (Select whether to use coarse or fine mode)
-#define Accel_tolerancy 0.5        // Tolerancy for acceleration measurement (+-0.5 unit of acceleration of tolerancy) (Acceptable error of acceleration)
-#define Gyro_tolerancy 1           // Tolerancy for gyro measurement (+-1 unit of gyroscope Z tolerancy) (Accounts to know if it is rotating or not at a constant speed for the ramp)
+#define Final_pointing_tolerance 1 // Tolerance for final pointing (+-1 degree of tolerance) (Check if position is within the margin)
+#define Pointing_mode_tolerance 5  // Tolerance for selecting pointing mode (+-5 degree of tolerance) (Select whether to use coarse or fine mode)
+#define Accel_tolerance 0.5        // Tolerance for acceleration measurement (+-0.5 unit of acceleration of tolerance) (Acceptable error of acceleration)
+#define Gyro_tolerance 1           // Tolerance for gyro measurement (+-1 unit of gyroscope Z tolerance) (Accounts to know if it is rotating or not at a constant speed for the ramp)
 
 SCMD DriverOne;      // Driver Object definition
 MPU9250 IMU(SPI, CS1); // MPU object definition
@@ -216,12 +216,12 @@ void generate_ramp(bool RW_direction, int Acc_ramp_time_duration, int RW_ramp_sp
   waiting = true;
 
   while (waiting)
-  { // Range of tolerancy
+  { // Range of tolerance
     if (Acc_Dec_state)
     { // If accelerating
-      if (abs(IMU_gyro_data_Z) > Gyro_tolerancy)
+      if (abs(IMU_gyro_data_Z) > Gyro_tolerance)
       { // If gyro is not 0 or so, means it has constant speed of rotation
-        if (abs(IMU_accel_data_X) < Accel_tolerancy)
+        if (abs(IMU_accel_data_X) < Accel_tolerance)
         { // Stop of acceleration
           waiting = false;
         }
@@ -229,9 +229,9 @@ void generate_ramp(bool RW_direction, int Acc_ramp_time_duration, int RW_ramp_sp
     }
     else
     { // If decelerating
-      if (abs(IMU_gyro_data_Z) < Gyro_tolerancy)
+      if (abs(IMU_gyro_data_Z) < Gyro_tolerance)
       { // If gyro is not 0 or so, means it has constant speed of rotation
-        if (abs(IMU_accel_data_X) < Accel_tolerancy)
+        if (abs(IMU_accel_data_X) < Accel_tolerance)
         { // Stop of acceleration
           waiting = false;
         }
@@ -635,8 +635,8 @@ void mode_Positioning_RW()
   // Initiate EmergencyStop routine
   Timer1.attachInterrupt(TIMER_CH3, EmergencyStop);
 
-  // Depend on the tolerancy enable Fine or Coarse positioning
-  if (abs(OBC_data_value) <= Pointing_mode_tolerancy)
+  // Depend on the tolerance enable Fine or Coarse positioning
+  if (abs(OBC_data_value) <= Pointing_mode_tolerance)
   {
     positioning_Fine();
   }
@@ -855,7 +855,7 @@ void positioning_Coarse()
   Serial1.print(" / ED: ");
   Serial1.println(Final_IMU_degree_value);
 
-  if ((Delta_degree_ramp - degree_turn_value) < Final_pointing_tolerancy && (Delta_degree_ramp - degree_turn_value) > Final_pointing_tolerancy)
+  if ((Delta_degree_ramp - degree_turn_value) < Final_pointing_tolerance && (Delta_degree_ramp - degree_turn_value) > Final_pointing_tolerance)
   {
     // Detach EmergencyStop
     Timer1.detachInterrupt(TIMER_CH3);
@@ -910,8 +910,8 @@ void positioning_Fine()
 
   Timer1.attachInterrupt(TIMER_CH4, computePID);
   while (waiting)
-  { // Range of tolerancy
-    if (abs(IMU_gyro_data_Z) < Gyro_tolerancy && abs(IMU_accel_data_X) < Accel_tolerancy)
+  { // Range of tolerance
+    if (abs(IMU_gyro_data_Z) < Gyro_tolerance && abs(IMU_accel_data_X) < Accel_tolerance)
     { // we consider it is stopped, modify values to be accurate
       waiting = false;
     }
