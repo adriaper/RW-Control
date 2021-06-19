@@ -69,8 +69,6 @@ float Deg_to_reach = 0;  // Setpoint angle (degrees)
 bool Zero_state = false; // Check if PID encompass yaw of 0 degrees (to turn the value to a workable zone)
 int PID_output = 0;      // Output value of the PID [from 0 to 255]
 
-void (*resetFunc)(void) = 0; //declare reset function @ address 0
-
 // ██████████████████████████████████████████████████████████████████████ FUNCTIONS
 // ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ GENERAL USE FUNCTIONS
 // ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒ OBC Functions
@@ -151,10 +149,7 @@ void EmergencyStop()
   {
     // If it stopped
     set_impulse(0, 0);
-    Stop_state = 0;
     OBC_data_value = 0;
-    Timer1.detachInterrupt(TIMER_CH3);
-    resetFunc();
     mode_OBC_Input_Wait();
   }
 }
@@ -581,7 +576,11 @@ void mode_OBC_Input_Wait()
     OUTPUT: 
     None, but exits to mode_Select
   */
-
+  if (Stop_state != 0)
+  {
+    Stop_state = 0;
+    Timer1.detachInterrupt(TIMER_CH3);
+  }
   OBC_mode_value = 0;
   Timer1.attachInterrupt(TIMER_CH3, OBC_mode_receive);
   while (OBC_mode_value == 0)
