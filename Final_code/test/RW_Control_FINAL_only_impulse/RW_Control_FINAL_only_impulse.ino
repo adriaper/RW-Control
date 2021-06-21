@@ -60,9 +60,9 @@ double PID_error, PID_last_error;            // Initialize error and previousErr
 double PID_cumulative_error, PID_rate_error; // Initialize the cumulative Error (Integral) and the rate of Error (Derivative)
 float Current_Yaw_deg = 0;                   // Addition of 180 deg to all values. The error is a substract, so the difference is the same
 
-double kp = 3; // Proportional contribution
-double ki = 4; // Integral contribution
-double kd = 0; // Derivative contribution
+double kp = 1; // Proportional contribution
+double ki = 0; // Integral contribution
+double kd = 1; // Derivative contribution
 
 float Deg_to_reach = 0;  // Setpoint angle (degrees)
 bool Zero_state = false; // Check if PID encompass yaw of 0 degrees (to turn the value to a workable zone)
@@ -81,6 +81,8 @@ void OBC_mode_receive()
   */
 
   // Check if UART Serial1 is available
+  read_IMU();
+  
   if (Serial1.available() > 0)
   {
     String bufferString = ""; // String for buffer of Serial1
@@ -104,7 +106,7 @@ void OBC_data_receive()
     INPUT: None, but gets data from User Serial1 input
     OUTPUT: Save OBC_data_value
   */
-
+  read_IMU();
   // Check if UART Serial1 is available
   if (Serial1.available() > 0)
   {
@@ -148,6 +150,7 @@ void EmergencyStop()
   {
     // If it stopped
     set_impulse(0, 0);
+    Serial1.flush();
     OBC_data_value = 0;
     mode_OBC_Input_Wait();
   }
@@ -295,12 +298,12 @@ void read_IMU()
   // When compiling, leave the IMU immobile so that the accelerometer calibrates properly.
   // Once the values ​​are obtained, they are noted and it is recompiled as it had been before.
 
-  Accel_pitch_deg -= -0.85;
-  Accel_roll_deg -= 10.55;
+  Accel_pitch_deg -= -11.17;
+  Accel_roll_deg -= -0.45;
 
-  //      Serial1.print(Accel_pitch_deg,6);
-  //      Serial1.print("\t");
-  //      Serial1.println(Accel_roll_deg,6);
+//    Serial1.print(Accel_pitch_deg,6);
+//    Serial1.print("\t");
+//    Serial1.println(Accel_roll_deg,6);
 
   // If gyroscope and accelerometer are synchronized
   if (Gyro_Accel_sync)
@@ -359,20 +362,19 @@ void show_IMU()
   */
 
   // Print accelerometer values
-  //  Serial1.print("Acc: ");
-  //  Serial1.print(IMU_accel_data_X, 4);
-  //  Serial1.print('\t');
-  //  Serial1.print(IMU_accel_data_Y, 4);
-  //  Serial1.print('\t');
-  // Serial1.print(IMU_accel_data_Z,4);
-  // Serial1.println("");
+//    Serial1.print("Ax: ");
+    Serial1.print(IMU_accel_data_X, 4);
+    Serial1.print(';');
+    Serial1.print(IMU_accel_data_Y, 4);
+    Serial1.print(';');
+//   Serial1.print(IMU_accel_data_Z,4);
+//   Serial1.println("");
 
   // Print Gyro values
   // Serial1.print(" / G: ");
-  // Serial1.print(IMU_gyro_data_X,4);  Serial1.print('\t');
-  // Serial1.print(IMU_gyro_data_Y,4);  Serial1.print('\t');
-  // Serial1.print(IMU_gyro_data_Z,4);   Serial1.print('\t');
-  // Serial1.print(gyro_Z_offseted,4);
+  // Serial1.print(IMU_gyro_data_X,4);  Serial1.print(';');
+  // Serial1.print(IMU_gyro_data_Y,4);  Serial1.print(';');
+   Serial1.print(IMU_gyro_data_Z,4);   Serial1.print(';');
   // Serial1.println("");
 
   // Print Mag values
@@ -383,11 +385,11 @@ void show_IMU()
   //   Serial1.println("");
 
   // Print orientation angles
-  Serial1.print(" / D: ");
-  Serial1.print(Pitch_deg, 4);
-  Serial1.print(';');
-  Serial1.print(Roll_deg, 4);
-  Serial1.print(';');
+//  Serial1.print(" / D: ");
+//  Serial1.print(Pitch_deg, 4);
+//  Serial1.print(';');
+//  Serial1.print(Roll_deg, 4);
+//  Serial1.print(';');
   Serial1.print(Yaw_deg, 4);
   Serial1.println("");
 }
@@ -422,7 +424,7 @@ void computePID()
   // Time step
   float dT = ((1 / ((float)STM32_CLOCK / (float)Timer1.getPrescaleFactor())) * Timer1.getOverflow()) * 0.001; // in seconds
 
-  read_IMU();
+  read_show_IMU();
 
   Current_Yaw_deg = Yaw_deg;
 
@@ -641,10 +643,10 @@ void positioning_Coarse()
   read_show_IMU();
   Initial_IMU_degree_value = Yaw_deg; // Stores initial degree, only in Z
   int initial_RW_speed = RW_speed;
-  generate_ramp(RW_direction, 0, 20, 1);
+  generate_ramp(RW_direction, 0, 30, 1);
   // 0 will not be used as we dont define the time the motor lasts to do an impulse. 255 is the max value
   // This values will be substituted by how we want the time and speed to reach in the ramp.
-  read_IMU();
+  read_show_IMU();
   Final_IMU_degree_value = Yaw_deg; // Stores final degree, only in Z
 
   Delta_degree_ramp = Final_IMU_degree_value - Initial_IMU_degree_value; // degree turnt on acc, only in Z.
@@ -669,12 +671,12 @@ void positioning_Coarse()
     // Negative cases: changes goes by 0º. EX: 330 to 30 when CCW (should be 60 but calculus is 30-330= -300)
     //                                     EX: 30 to 330 when CW  (should be 60 but calculus is 30-330= -300)
   }
-  Serial1.print("ID: ");
-  Serial1.print(Initial_IMU_degree_value);
-  Serial1.print(" / T: ");
-  Serial1.print(Delta_degree_ramp); // Difference of ange
-  Serial1.print(" / ED: ");
-  Serial1.println(Final_IMU_degree_value); // Final, End angle
+//  Serial1.print("ID: ");
+//  Serial1.print(Initial_IMU_degree_value);
+//  Serial1.print(" / T: ");
+//  Serial1.print(Delta_degree_ramp); // Difference of ange
+//  Serial1.print(" / ED: ");
+//  Serial1.println(Final_IMU_degree_value); // Final, End angle
   // --------------------------------------------------------------WAITING
   if ((degree_turn_value - 2 * Delta_degree_ramp) > 0) // if it is <0, skip the waiting phase, deceleration must be done immediately after, and still it would be too much turn.
   {
@@ -699,9 +701,9 @@ void positioning_Coarse()
       Degree_stop_wait=350+(150-2*50)=400;  40
 
       */
-      Degree_stop_wait = Final_IMU_degree_value + (degree_turn_value - 2 * Delta_degree_ramp); // Get value of degree to start
+      Degree_stop_wait = Final_IMU_degree_value + (degree_turn_value - 2 * Delta_degree_ramp); // Get value of degree to start stop
 
-      Timer1.attachInterrupt(TIMER_CH4, read_IMU);
+      Timer1.attachInterrupt(TIMER_CH4, read_show_IMU);
       Serial1.println("Waiting");
       while (waiting)
       { // Stays as long as waiting is true.
@@ -739,9 +741,9 @@ void positioning_Coarse()
     {
       // CASE CW
       // if its <0, it must be done immediately after, and still it would be too much turn.
-      Degree_stop_wait = Final_IMU_degree_value - (degree_turn_value - 2 * Delta_degree_ramp); // Get value of degree to start
+      Degree_stop_wait = Final_IMU_degree_value - (degree_turn_value - 2 * Delta_degree_ramp); // Get value of degree to start stop
 
-      Timer1.attachInterrupt(TIMER_CH4, read_IMU);
+      Timer1.attachInterrupt(TIMER_CH4, read_show_IMU);
       while (waiting)
       { // Stays as long as waiting is true.
         Serial1.println("Waiting");
@@ -780,10 +782,10 @@ void positioning_Coarse()
   }
 
   // ----------------------------------------------------------DECELERATION
-  Serial1.print("ID: ");
-  Serial1.print(Final_IMU_degree_value);
-  Serial1.print(" / ED: ");
-  Serial1.println(Degree_stop_wait);
+//  Serial1.print("ID: ");
+//  Serial1.print(Final_IMU_degree_value);
+//  Serial1.print(" / ED: ");
+//  Serial1.println(Degree_stop_wait);
 
   // Initial_RW_Speed returns speed to original value instead of 0
   generate_ramp(RW_direction, initial_RW_speed, 0, 0);
@@ -791,7 +793,7 @@ void positioning_Coarse()
   // 0 will not be used as we dont define the time the motor lasts to do an impulse. 255 is the max value
   // This values will be substituted by how we want the time and speed to reach in the ramp.
 
-  read_IMU();
+  read_show_IMU();
   Final_IMU_degree_value = Yaw_deg; // can be overwritten, final degree of manoeuvre
   if (RW_direction)
   {
@@ -808,12 +810,12 @@ void positioning_Coarse()
     //                                     EX: 30 to 330 when CW  (should be 60 but calculus is 30-330= -300)
   }
 
-  Serial1.print("ID: ");
-  Serial1.print(Degree_stop_wait);
-  Serial1.print(" / T: ");
-  Serial1.print(Delta_degree_ramp);
-  Serial1.print(" / ED: ");
-  Serial1.println(Final_IMU_degree_value);
+//  Serial1.print("ID: ");
+//  Serial1.print(Degree_stop_wait);
+//  Serial1.print(" / T: ");
+//  Serial1.print(Delta_degree_ramp);
+//  Serial1.print(" / ED: ");
+//  Serial1.println(Final_IMU_degree_value);
 
   if ((Delta_degree_ramp - degree_turn_value) < Final_pointing_tolerance && (Delta_degree_ramp - degree_turn_value) > Final_pointing_tolerance)
   {
@@ -825,6 +827,8 @@ void positioning_Coarse()
   }
   else
   {
+    // Recalculate the OBC_data_value for PID
+    OBC_data_value = OBC_data_value - Delta_degree_ramp;
     positioning_Fine(); // Correction
   }
 }
@@ -871,7 +875,7 @@ void positioning_Fine()
   Timer1.attachInterrupt(TIMER_CH4, computePID);
   while (waiting)
   { // Range of tolerance
-    if (abs(IMU_gyro_data_Z) < Gyro_tolerance && abs(IMU_accel_data_X) < Accel_tolerance)
+    if (abs(IMU_gyro_data_Z) < Gyro_tolerance && abs(IMU_accel_data_X) < Accel_tolerance && abs(Deg_to_reach - Yaw_deg) < Final_pointing_tolerance)
     { // we consider it is stopped, modify values to be accurate
       waiting = false;
     }
@@ -902,7 +906,15 @@ void mode_IMU_reading()
   */
 
   OBC_mode_value = 0;
-  read_show_IMU();
+  Timer1.attachInterrupt(TIMER_CH4,read_show_IMU);
+  Timer1.attachInterrupt(TIMER_CH3, OBC_data_receive);
+  while (OBC_data_value == 0)
+  {
+    delay(1); // If not used the while function does not work
+  }
+  Timer1.detachInterrupt(TIMER_CH3);
+  Timer1.detachInterrupt(TIMER_CH4);
+  OBC_data_value = 0;
   mode_Select(OBC_mode_value);
 }
 
@@ -916,16 +928,15 @@ void mode_motor_on_off()
     OUTPUT: 
     None
   */
-
   OBC_mode_value = 0;
-  set_impulse(0, 255);
+  set_impulse(true, 100);
   Timer1.attachInterrupt(TIMER_CH3, OBC_data_receive);
   while (OBC_data_value == 0)
   {
     delay(1); // If not used the while function does not work
   }
   Timer1.detachInterrupt(TIMER_CH3);
-  set_impulse(0, 0);
+  set_impulse(true, 0);
   OBC_data_value = 0;
   mode_OBC_Input_Wait();
 }
@@ -1003,24 +1014,31 @@ void setup()
   // It moves in the shape of an eight approximately 2 min. It is recommended to carry out several times until the measurements are fine-tuned.
   // Uncomment everything and enter the values ​​obtained from the MagBias and ScaleFactor to view the results of the magnetometer.
   //
-  //    IMU.calibrateMag();
-  //    Serial1.println("Done");
-  //
-  //    Serial1.print(IMU.getMagBiasX_uT());
-  //    Serial1.print(",");
-  //    Serial1.print(IMU.getMagBiasY_uT());
-  //    Serial1.print(",");
-  //    Serial1.println(IMU.getMagBiasZ_uT());
-  //
-  //    Serial1.print(IMU.getMagScaleFactorX());
-  //    Serial1.print(",");
-  //    Serial1.print(IMU.getMagScaleFactorY());
-  //    Serial1.print(",");
-  //    Serial1.println(IMU.getMagScaleFactorZ());
+//      IMU.calibrateMag();
+//      Serial1.println("Done");
+//    
+//      Serial1.print(IMU.getMagBiasX_uT());
+//      Serial1.print(",");
+//      Serial1.print(IMU.getMagBiasY_uT());
+//      Serial1.print(",");
+//      Serial1.println(IMU.getMagBiasZ_uT());
+//    
+//      Serial1.print(IMU.getMagScaleFactorX());
+//      Serial1.print(",");
+//      Serial1.print(IMU.getMagScaleFactorY());
+//      Serial1.print(",");
+//      Serial1.println(IMU.getMagScaleFactorZ());
 
-  IMU.setMagCalX(24.48, 1.26); // The first value corresponds to the MagBias, and the second the ScaleFactor.
-  IMU.setMagCalY(11.26, 0.86);
-  IMU.setMagCalZ(-24.11, 0.96);
+// Reactioni wheels + Magnetorquer
+  IMU.setMagCalX(9.42, 0.91); // The first value corresponds to the MagBias, and the second the ScaleFactor.
+  IMU.setMagCalY(41.82, 0.98);
+  IMU.setMagCalZ(-6.59, 1.14);
+
+
+// Only reaction wheels
+//  IMU.setMagCalX(14.06, 0.84); // The first value corresponds to the MagBias, and the second the ScaleFactor.
+//  IMU.setMagCalY(29.85, 1.36);
+//  IMU.setMagCalZ(-32.30, 0.94);
 
   Serial1.println("MPU9250 Ready to Use!");
 
