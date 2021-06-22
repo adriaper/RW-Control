@@ -82,7 +82,7 @@ void OBC_mode_receive()
 
   // Check if UART Serial1 is available
   read_IMU();
-  
+
   if (Serial1.available() > 0)
   {
     String bufferString = ""; // String for buffer of Serial1
@@ -301,9 +301,9 @@ void read_IMU()
   Accel_pitch_deg -= -11.17;
   Accel_roll_deg -= -0.45;
 
-//    Serial1.print(Accel_pitch_deg,6);
-//    Serial1.print("\t");
-//    Serial1.println(Accel_roll_deg,6);
+  //    Serial1.print(Accel_pitch_deg,6);
+  //    Serial1.print("\t");
+  //    Serial1.println(Accel_roll_deg,6);
 
   // If gyroscope and accelerometer are synchronized
   if (Gyro_Accel_sync)
@@ -362,19 +362,20 @@ void show_IMU()
   */
 
   // Print accelerometer values
-//    Serial1.print("Ax: ");
-    Serial1.print(IMU_accel_data_X, 4);
-    Serial1.print(';');
-    Serial1.print(IMU_accel_data_Y, 4);
-    Serial1.print(';');
-//   Serial1.print(IMU_accel_data_Z,4);
-//   Serial1.println("");
+  //    Serial1.print("Ax: ");
+  Serial1.print(IMU_accel_data_X, 4);
+  Serial1.print(';');
+  Serial1.print(IMU_accel_data_Y, 4);
+  Serial1.print(';');
+  //   Serial1.print(IMU_accel_data_Z,4);
+  //   Serial1.println("");
 
   // Print Gyro values
   // Serial1.print(" / G: ");
   // Serial1.print(IMU_gyro_data_X,4);  Serial1.print(';');
   // Serial1.print(IMU_gyro_data_Y,4);  Serial1.print(';');
-   Serial1.print(IMU_gyro_data_Z,4);   Serial1.print(';');
+  Serial1.print(IMU_gyro_data_Z, 4);
+  Serial1.print(';');
   // Serial1.println("");
 
   // Print Mag values
@@ -385,11 +386,11 @@ void show_IMU()
   //   Serial1.println("");
 
   // Print orientation angles
-//  Serial1.print(" / D: ");
-//  Serial1.print(Pitch_deg, 4);
-//  Serial1.print(';');
-//  Serial1.print(Roll_deg, 4);
-//  Serial1.print(';');
+  //  Serial1.print(" / D: ");
+  //  Serial1.print(Pitch_deg, 4);
+  //  Serial1.print(';');
+  //  Serial1.print(Roll_deg, 4);
+  //  Serial1.print(';');
   Serial1.print(Yaw_deg, 4);
   Serial1.println("");
 }
@@ -671,12 +672,12 @@ void positioning_Coarse()
     // Negative cases: changes goes by 0º. EX: 330 to 30 when CCW (should be 60 but calculus is 30-330= -300)
     //                                     EX: 30 to 330 when CW  (should be 60 but calculus is 30-330= -300)
   }
-//  Serial1.print("ID: ");
-//  Serial1.print(Initial_IMU_degree_value);
-//  Serial1.print(" / T: ");
-//  Serial1.print(Delta_degree_ramp); // Difference of ange
-//  Serial1.print(" / ED: ");
-//  Serial1.println(Final_IMU_degree_value); // Final, End angle
+  //  Serial1.print("ID: ");
+  //  Serial1.print(Initial_IMU_degree_value);
+  //  Serial1.print(" / T: ");
+  //  Serial1.print(Delta_degree_ramp); // Difference of ange
+  //  Serial1.print(" / ED: ");
+  //  Serial1.println(Final_IMU_degree_value); // Final, End angle
   // --------------------------------------------------------------WAITING
   if ((degree_turn_value - 2 * Delta_degree_ramp) > 0) // if it is <0, skip the waiting phase, deceleration must be done immediately after, and still it would be too much turn.
   {
@@ -782,10 +783,10 @@ void positioning_Coarse()
   }
 
   // ----------------------------------------------------------DECELERATION
-//  Serial1.print("ID: ");
-//  Serial1.print(Final_IMU_degree_value);
-//  Serial1.print(" / ED: ");
-//  Serial1.println(Degree_stop_wait);
+  //  Serial1.print("ID: ");
+  //  Serial1.print(Final_IMU_degree_value);
+  //  Serial1.print(" / ED: ");
+  //  Serial1.println(Degree_stop_wait);
 
   // Initial_RW_Speed returns speed to original value instead of 0
   generate_ramp(RW_direction, initial_RW_speed, 0, 0);
@@ -810,12 +811,12 @@ void positioning_Coarse()
     //                                     EX: 30 to 330 when CW  (should be 60 but calculus is 30-330= -300)
   }
 
-//  Serial1.print("ID: ");
-//  Serial1.print(Degree_stop_wait);
-//  Serial1.print(" / T: ");
-//  Serial1.print(Delta_degree_ramp);
-//  Serial1.print(" / ED: ");
-//  Serial1.println(Final_IMU_degree_value);
+  //  Serial1.print("ID: ");
+  //  Serial1.print(Degree_stop_wait);
+  //  Serial1.print(" / T: ");
+  //  Serial1.print(Delta_degree_ramp);
+  //  Serial1.print(" / ED: ");
+  //  Serial1.println(Final_IMU_degree_value);
 
   if ((Delta_degree_ramp - degree_turn_value) < Final_pointing_tolerance && (Delta_degree_ramp - degree_turn_value) > Final_pointing_tolerance)
   {
@@ -848,6 +849,7 @@ void positioning_Fine()
 
   bool waiting = true;
 
+  read_show_IMU();
   Deg_to_reach = OBC_data_value + Yaw_deg; // Get value to reach, contained in 360
   if (Deg_to_reach < 0)
   {
@@ -906,7 +908,7 @@ void mode_IMU_reading()
   */
 
   OBC_mode_value = 0;
-  Timer1.attachInterrupt(TIMER_CH4,read_show_IMU);
+  Timer1.attachInterrupt(TIMER_CH4, read_show_IMU);
   Timer1.attachInterrupt(TIMER_CH3, OBC_data_receive);
   while (OBC_data_value == 0)
   {
@@ -1014,31 +1016,30 @@ void setup()
   // It moves in the shape of an eight approximately 2 min. It is recommended to carry out several times until the measurements are fine-tuned.
   // Uncomment everything and enter the values ​​obtained from the MagBias and ScaleFactor to view the results of the magnetometer.
   //
-//      IMU.calibrateMag();
-//      Serial1.println("Done");
-//    
-//      Serial1.print(IMU.getMagBiasX_uT());
-//      Serial1.print(",");
-//      Serial1.print(IMU.getMagBiasY_uT());
-//      Serial1.print(",");
-//      Serial1.println(IMU.getMagBiasZ_uT());
-//    
-//      Serial1.print(IMU.getMagScaleFactorX());
-//      Serial1.print(",");
-//      Serial1.print(IMU.getMagScaleFactorY());
-//      Serial1.print(",");
-//      Serial1.println(IMU.getMagScaleFactorZ());
+  //      IMU.calibrateMag();
+  //      Serial1.println("Done");
+  //
+  //      Serial1.print(IMU.getMagBiasX_uT());
+  //      Serial1.print(",");
+  //      Serial1.print(IMU.getMagBiasY_uT());
+  //      Serial1.print(",");
+  //      Serial1.println(IMU.getMagBiasZ_uT());
+  //
+  //      Serial1.print(IMU.getMagScaleFactorX());
+  //      Serial1.print(",");
+  //      Serial1.print(IMU.getMagScaleFactorY());
+  //      Serial1.print(",");
+  //      Serial1.println(IMU.getMagScaleFactorZ());
 
-// Reactioni wheels + Magnetorquer
+  // Reactioni wheels + Magnetorquer
   IMU.setMagCalX(9.42, 0.91); // The first value corresponds to the MagBias, and the second the ScaleFactor.
   IMU.setMagCalY(41.82, 0.98);
   IMU.setMagCalZ(-6.59, 1.14);
 
-
-// Only reaction wheels
-//  IMU.setMagCalX(14.06, 0.84); // The first value corresponds to the MagBias, and the second the ScaleFactor.
-//  IMU.setMagCalY(29.85, 1.36);
-//  IMU.setMagCalZ(-32.30, 0.94);
+  // Only reaction wheels
+  //  IMU.setMagCalX(14.06, 0.84); // The first value corresponds to the MagBias, and the second the ScaleFactor.
+  //  IMU.setMagCalY(29.85, 1.36);
+  //  IMU.setMagCalZ(-32.30, 0.94);
 
   Serial1.println("MPU9250 Ready to Use!");
 
