@@ -29,8 +29,9 @@
 #define Deg_to_rad 0.01745329      // Convert degrees to radians
 #define Final_pointing_tolerance 1 // Tolerance for final pointing (+-1 degree of tolerance) (Check if position is within the margin)
 #define Pointing_mode_tolerance 5  // Tolerance for selecting pointing mode (+-5 degree of tolerance) (Select whether to use coarse or fine mode)
-#define Accel_tolerance 0.5        // Tolerance for acceleration measurement (+-0.5 unit of acceleration of tolerance) (Acceptable error of acceleration)
-#define Gyro_tolerance 100           // Tolerance for gyro measurement (+-1 unit of gyroscope Z tolerance) (Accounts to know if it is rotating or not at a constant speed for the ramp)
+#define Accel_tolerance 100        // Tolerance for acceleration measurement (+-0.5 unit of acceleration of tolerance) (Acceptable error of acceleration)
+#define Gyro_tolerance_dec 1           // Tolerance for gyro measurement (+-1 unit of gyroscope Z tolerance) (Accounts to know if it is rotating or not at a constant speed for the ramp)
+#define Gyro_tolerance_acc 85           // Tolerance for gyro measurement (+-1 unit of gyroscope Z tolerance) (Accounts to know if it is rotating or not at a constant speed for the ramp)
 
 SCMD DriverOne;        // Driver Object definition
 MPU9250 IMU(SPI, CS1); // MPU object definition
@@ -86,6 +87,7 @@ void OBC_mode_receive()
 {
   /*
     Function to set the Bluepill to receiving mode. Uses Timer CH3. Serial1 as UART communication
+
     INPUT: None, but gets mode from User Serial1 input
     OUTPUT: None, but saves OBC_mode_value
   */
@@ -110,6 +112,7 @@ void OBC_data_receive()
 {
   /*
     Function to set the Bluepill to receiving data mode. Uses Timer CH3. Serial1 as UART communication
+
     INPUT: None, but gets data from User Serial1 input
     OUTPUT: Save OBC_data_value
   */
@@ -131,6 +134,7 @@ void EmergencyStop()
 {
   /*
     Function to STOP the motor from rotating.
+
     INPUT: None, but gets data from User Serial1 input
     OUTPUT: Save OBC_data_value
   */
@@ -155,8 +159,8 @@ void EmergencyStop()
   if (Stop_state != 0)
   {
     // If it stopped
-    set_impulse(0, 0);
-    OBC_data_value = 0;
+    set_impulse(1, 0);
+    OBC_data_value = 0;  
     mode_OBC_Input_Wait();
   }
 }
@@ -166,6 +170,7 @@ void set_impulse(bool RW_direction, int New_RW_speed)
 {
   /*
     Function to set the motor at a fixed direction and speed (B = port 1, A = port 0)
+
     INPUT: 
       RW_direction: Reaction Wheel direction [Clockwise or Counter Clockwise] in A
       New_RW_speed: New reaction wheel speed [from 0 to 255]
@@ -204,6 +209,7 @@ void generate_ramp(bool RW_direction, int Acc_ramp_time_duration, int RW_ramp_sp
   /*
     Function to generate ramps. In this case it is a Single Impulse.
     As we dont know the time it lasts, we have to see if speed changes on the cubesat. That is the use of the while.
+
     INPUT: 
       RW_direction: Reaction Wheel direction [Clockwise or Counter Clockwise]
       Acc_ramp_time_duration: Duration of ramp
@@ -225,7 +231,7 @@ void generate_ramp(bool RW_direction, int Acc_ramp_time_duration, int RW_ramp_sp
   { // Range of tolerance
     if (Acc_Dec_state)
     { // If accelerating
-      if (abs(IMU_gyro_data_Z - spd_offset) > Gyro_tolerance)
+      if (abs(IMU_gyro_data_Z - spd_offset) > Gyro_tolerance_acc)
       { // If gyro is not 0 or so, means it has constant speed of rotation
         if (abs(IMU_accel_data_X - acc_offset) < Accel_tolerance)
         { // Stop of acceleration
@@ -235,7 +241,7 @@ void generate_ramp(bool RW_direction, int Acc_ramp_time_duration, int RW_ramp_sp
     }
     else
     { // If decelerating
-      if (abs(IMU_gyro_data_Z - spd_offset) < Gyro_tolerance)
+      if (abs(IMU_gyro_data_Z - spd_offset) < Gyro_tolerance_dec)
       { // If gyro is not 0 or so, means it has constant speed of rotation
         if (abs(IMU_accel_data_X - acc_offset) < Accel_tolerance)
         { // Stop of acceleration
@@ -254,6 +260,7 @@ void read_IMU()
 {
   /*
     Function to read IMU_Data (and refreshes the global variables for IMU data).
+
     INPUT: 
     None
     OUTPUT: 
@@ -299,9 +306,9 @@ void read_IMU()
   // To calibrate the accelerometer, put the values ​​0.0 in the variables and uncomment the 3 Serial1.prints
   // When compiling, leave the IMU immobile so that the accelerometer calibrates properly.
   // Once the values ​​are obtained, they are noted and it is recompiled as it had been before.
-
-   Accel_pitch_deg -= 0.35;
-  Accel_roll_deg -= 3.5;
+  
+  Accel_pitch_deg -= 0.5;
+  Accel_roll_deg -= 2.10;
 
   //      Serial1.print(Accel_pitch_deg,6);
   //      Serial1.print("\t");
@@ -345,20 +352,22 @@ void read_IMU()
   // If you want to be precise, add the declination of the geographical place where you are (https: // www.ign.es/web/gmt-declinacion-magnetica)
   // Yaw_deg += Declination;
 
-  // The next two lines contain the value of Yaw_deg between 0 and 360 degrees.
+
+  // To initate at zero
+  Yaw_deg = Yaw_deg - deg_offset;
+
+    // The next two lines contain the value of Yaw_deg between 0 and 360 degrees.
   if (Yaw_deg < 0)
     Yaw_deg += 360;
   if (Yaw_deg >= 360)
     Yaw_deg -= 360;
-
-  // To initate at zero
-  Yaw_deg = Yaw_deg - deg_offset;
 }
 
 void show_IMU()
 {
   /*
     Function to show IMU_Data on the Serial1 Monitor
+
     INPUT: 
     None
     OUTPUT: 
@@ -403,6 +412,7 @@ void read_show_IMU()
 {
   /*
     Function to both read and show IMU_Data.
+
     INPUT: 
     None
     OUTPUT: 
@@ -418,6 +428,7 @@ void computePID()
 {
   /*
     Function to calculate PID
+
     INPUT: 
     None
     OUTPUT: 
@@ -505,6 +516,7 @@ void mode_Select(int mode_value)
 {
   /*
     Function to select Mode
+
     INPUT: 
     mode_value ['0': Waiting; '1': Positioning; '2': Reading]
     OUTPUT: 
@@ -540,6 +552,7 @@ void mode_motor_on_off()
 {
   /*
     TEST PURPOSE Function
+
     INPUT: 
     None
     OUTPUT: 
@@ -547,7 +560,7 @@ void mode_motor_on_off()
   */
 
   OBC_mode_value = 0;
-  set_impulse(0, 255);
+  set_impulse(1, 255);
   Serial1.println("Motor status ON");
   Timer1.attachInterrupt(TIMER_CH3, OBC_data_receive);
   while (OBC_data_value == 0)
@@ -555,7 +568,7 @@ void mode_motor_on_off()
     delay(1); // If not used the while function does not work
   }
   Timer1.detachInterrupt(TIMER_CH3);
-  set_impulse(0, 0);
+  set_impulse(1, 0);
   Serial1.println("Motor status OFF");
   OBC_data_value = 0;
   mode_OBC_Input_Wait();
@@ -565,6 +578,7 @@ void mode_motor_set_speed()
 {
   /*
     Set motor to a specific constant speed
+
     INPUT: 
     None
     OUTPUT: 
@@ -579,11 +593,16 @@ void mode_motor_set_speed()
   {
     delay(1); // If not used the while function does not work
   }
+  Timer1.detachInterrupt(TIMER_CH3);
   
   Serial1.print(OBC_data_value);
+  
+  if(OBC_data_value>0){
+    set_impulse(1, OBC_data_value);
+  }else{
+  set_impulse(0, -OBC_data_value);
+  }
 
-  Timer1.detachInterrupt(TIMER_CH3);
-  set_impulse(0, OBC_data_value);
   OBC_data_value = 0;
   mode_OBC_Input_Wait();
 }
@@ -592,6 +611,7 @@ void mode_IMU_reading()
 {
   /*
     TEST PURPOSE Function
+
     INPUT: 
     None
     OUTPUT: 
@@ -607,6 +627,7 @@ void mode_OBC_Input_Wait()
 {
   /*
     0. Default mode, OBC Reading
+
     INPUT: 
     None
     OUTPUT: 
@@ -634,6 +655,7 @@ void mode_Positioning_RW()
 {
   /*
     1. Mode Positioning (RW only)
+
     INPUT: 
     None
     OUTPUT:
@@ -666,7 +688,7 @@ void mode_Positioning_RW()
   Timer1.detachInterrupt(TIMER_CH3);
 
   Serial1.print("Value to turn: "); // In this case turn, but can be what is needed
-  Serial1.print(OBC_data_value);
+  Serial1.println(OBC_data_value);
 
   // Initiate EmergencyStop routine
   Timer1.attachInterrupt(TIMER_CH3, EmergencyStop);
@@ -686,6 +708,7 @@ void positioning_Coarse()
 {
   /*
     1.1. Mode Positioning Coarse: For now simple
+
     INPUT: 
     None
     OUTPUT:
@@ -716,10 +739,16 @@ void positioning_Coarse()
   read_show_IMU();
   spd_offset = IMU_gyro_data_Z;
   acc_offset = IMU_accel_data_X;
+//  Serial1.print("spd_offset: ");
+//  Serial1.println(spd_offset);
+//  Serial1.print("acc_offset: ");
+//  Serial1.println(acc_offset);
   Initial_IMU_degree_value = Yaw_deg; // Stores initial degree, only in Z
-  int initial_RW_speed = RW_speed;
-  int set_RW_speed = initial_RW_speed + 10;
-  generate_ramp(RW_direction, set_RW_speed, 1, 1);
+  int initial_RW_speed = abs(RW_speed);
+  int set_RW_speed = initial_RW_speed + 50; //with 50 it goes up to 85 until it gets a bit steady (experimental value)
+  Serial1.print("set_RW_speed: ");
+  Serial1.println(set_RW_speed);
+  generate_ramp(RW_direction, 0, set_RW_speed, 1);
   // 0 will not be used as we dont define the time the motor lasts to do an impulse. 255 is the max value
   // This values will be substituted by how we want the time and speed to reach in the ramp.
   read_IMU();
@@ -754,8 +783,10 @@ void positioning_Coarse()
   Serial1.print(" / ED: ");
   Serial1.println(Final_IMU_degree_value); // Final, End angle
   // --------------------------------------------------------------WAITING
-  if ((degree_turn_value - 2 * Delta_degree_ramp) > 0) // if it is <0, skip the waiting phase, deceleration must be done immediately after, and still it would be too much turn.
+ while ((degree_turn_value - 2 * Delta_degree_ramp) < 0) // if it is <0, skip the waiting phase, deceleration must be done immediately after, and still it would be too much turn.
   {
+    degree_turn_value = degree_turn_value + 360;
+  }
     waiting = true;
     if (RW_direction)
     {
@@ -765,11 +796,17 @@ void positioning_Coarse()
       RW CCW
       CB CW
       IMU positive
+
       Angulo inicial 300º
+
       gira 150º en sentido CB CW = degree_turn_value
+
       angulo final acc 350º = Final_IMU_degree_value
+
       Delta_degree_ramp=350-300=50
+
       Degree_stop_wait=350+(150-2*50)=400;  40
+
       */
       Degree_stop_wait = Final_IMU_degree_value + (degree_turn_value - 2 * Delta_degree_ramp); // Get value of degree to start
 
@@ -849,7 +886,7 @@ void positioning_Coarse()
       }
       Timer1.detachInterrupt(TIMER_CH4);
     }
-  }
+  // }
 
   // ----------------------------------------------------------DECELERATION
   Serial1.print("ID: ");
@@ -858,7 +895,9 @@ void positioning_Coarse()
   Serial1.println(Degree_stop_wait);
 
   // Initial_RW_Speed returns speed to original value instead of 0
-  generate_ramp(RW_direction, initial_RW_speed, 0, 0);
+  
+  Serial1.println(initial_RW_speed);
+  generate_ramp(RW_direction, 0, initial_RW_speed, 0);
   // This is to assure the impulse is the same, as if there is some momentum accumulation, returning to 0 would be a different impulse
   // 0 will not be used as we dont define the time the motor lasts to do an impulse. 255 is the max value
   // This values will be substituted by how we want the time and speed to reach in the ramp.
@@ -897,7 +936,7 @@ void positioning_Coarse()
   }
   else
   {
-    positioning_Fine(); // Correction
+    // positioning_Fine(); // Correction
   }
 }
 
@@ -905,6 +944,7 @@ void positioning_Fine()
 {
   /*
     1.2. Mode Positioning Fine: PID
+
     INPUT: 
     None
     OUTPUT:
@@ -946,7 +986,7 @@ void positioning_Fine()
   Timer1.attachInterrupt(TIMER_CH4, computePID);
   while (waiting)
   { // Range of tolerance
-    if (abs(IMU_gyro_data_Z) < Gyro_tolerance && abs(IMU_accel_data_X) < Accel_tolerance)
+    if (abs(IMU_gyro_data_Z) < Gyro_tolerance_dec && abs(IMU_accel_data_X) < Accel_tolerance)
     { // we consider it is stopped, modify values to be accurate
       waiting = false;
     }
@@ -1054,9 +1094,9 @@ void setup()
 //      Serial1.println(IMU.getMagScaleFactorZ());
 
 
-  IMU.setMagCalX(21.66, 0.8); // The first value corresponds to the MagBias, and the second the ScaleFactor.
-  IMU.setMagCalY(-6.72, 2);
-  IMU.setMagCalZ(-28.60, 0.8);
+  IMU.setMagCalX(14.50, 1.29); // The first value corresponds to the MagBias, and the second the ScaleFactor.
+  IMU.setMagCalY(16.01, 0.84);
+  IMU.setMagCalZ(-34.91, 0.97);
 
   Serial1.println("MPU9250 Ready to Use!");
 
