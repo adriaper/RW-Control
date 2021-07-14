@@ -30,8 +30,8 @@
 #define Final_pointing_tolerance 1 // Tolerance for final pointing (+-1 degree of tolerance) (Check if position is within the margin)
 #define Pointing_mode_tolerance 5  // Tolerance for selecting pointing mode (+-5 degree of tolerance) (Select whether to use coarse or fine mode)
 #define Accel_tolerance 100        // Tolerance for acceleration measurement (+-0.5 unit of acceleration of tolerance) (Acceptable error of acceleration)
-#define Gyro_tolerance_dec 1           // Tolerance for gyro measurement (+-1 unit of gyroscope Z tolerance) (Accounts to know if it is rotating or not at a constant speed for the ramp)
-#define Gyro_tolerance_acc 85           // Tolerance for gyro measurement (+-1 unit of gyroscope Z tolerance) (Accounts to know if it is rotating or not at a constant speed for the ramp)
+#define Gyro_tolerance_dec 5           // Tolerance for gyro measurement (+-1 unit of gyroscope Z tolerance) (Accounts to know if it is rotating or not at a constant speed for the ramp)
+#define Gyro_tolerance_acc 80           // Tolerance for gyro measurement (+-1 unit of gyroscope Z tolerance) (Accounts to know if it is rotating or not at a constant speed for the ramp)
 
 SCMD DriverOne;        // Driver Object definition
 MPU9250 IMU(SPI, CS1); // MPU object definition
@@ -72,6 +72,8 @@ double kd = 0; // Derivative contribution
 float Deg_to_reach = 0;  // Setpoint angle (degrees)
 bool Zero_state = false; // Check if PID encompass yaw of 0 degrees (to turn the value to a workable zone)
 int PID_output = 0;      // Output value of the PID [from 0 to 255]
+
+int increment_speed = 50; // Increment speed of the ramp
 
 void WAITFORINPUT(){            
   while(!Serial1.available()){};  
@@ -307,8 +309,8 @@ void read_IMU()
   // When compiling, leave the IMU immobile so that the accelerometer calibrates properly.
   // Once the values ​​are obtained, they are noted and it is recompiled as it had been before.
   
-  Accel_pitch_deg -= 0.5;
-  Accel_roll_deg -= 2.10;
+  Accel_pitch_deg -= 0.35;
+  Accel_roll_deg -= 3.6;
 
   //      Serial1.print(Accel_pitch_deg,6);
   //      Serial1.print("\t");
@@ -745,7 +747,7 @@ void positioning_Coarse()
 //  Serial1.println(acc_offset);
   Initial_IMU_degree_value = Yaw_deg; // Stores initial degree, only in Z
   int initial_RW_speed = abs(RW_speed);
-  int set_RW_speed = initial_RW_speed + 50; //with 50 it goes up to 85 until it gets a bit steady (experimental value)
+  int set_RW_speed = initial_RW_speed + increment_speed; //with 50 it goes up to 85 until it gets a bit steady (experimental value)
   Serial1.print("set_RW_speed: ");
   Serial1.println(set_RW_speed);
   generate_ramp(RW_direction, 0, set_RW_speed, 1);
@@ -788,6 +790,7 @@ void positioning_Coarse()
     degree_turn_value = degree_turn_value + 360;
   }
     waiting = true;
+    Prev_Yaw_deg=Yaw_deg;
     if (RW_direction)
     {
       // CASE CCW
@@ -810,7 +813,7 @@ void positioning_Coarse()
       */
       Degree_stop_wait = Final_IMU_degree_value + (degree_turn_value - 2 * Delta_degree_ramp); // Get value of degree to start
 
-      Timer1.attachInterrupt(TIMER_CH4, read_IMU);
+      Timer1.attachInterrupt(TIMER_CH4, read_show_IMU);
       Serial1.println("Waiting");
       while (waiting)
       { // Stays as long as waiting is true.
@@ -1094,9 +1097,9 @@ void setup()
 //      Serial1.println(IMU.getMagScaleFactorZ());
 
 
-  IMU.setMagCalX(14.50, 1.29); // The first value corresponds to the MagBias, and the second the ScaleFactor.
-  IMU.setMagCalY(16.01, 0.84);
-  IMU.setMagCalZ(-34.91, 0.97);
+  IMU.setMagCalX(28.24, 1.24); // The first value corresponds to the MagBias, and the second the ScaleFactor.
+  IMU.setMagCalY(21.61, 0.93);
+  IMU.setMagCalZ(-25.11, 0.89);
 
   Serial1.println("MPU9250 Ready to Use!");
 
