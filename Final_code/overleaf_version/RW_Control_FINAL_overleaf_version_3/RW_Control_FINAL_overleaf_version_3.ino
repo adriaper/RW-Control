@@ -33,6 +33,11 @@
 #define Gyro_tolerance_dec 5           // Tolerance for gyro measurement (+-1 unit of gyroscope Z tolerance) (Accounts to know if it is rotating or not at a constant speed for the ramp)
 #define Gyro_tolerance_acc 80           // Tolerance for gyro measurement (+-1 unit of gyroscope Z tolerance) (Accounts to know if it is rotating or not at a constant speed for the ramp)
 
+#define Gyro_tolerance_PID 0           // Tolerance for gyro measurement (+-1 unit of gyroscope Z tolerance) (Accounts to know if it is rotating or not at a constant speed for the ramp)
+
+
+#define Motor_minimum_speed 15 // Minimum speed that turn on the motor
+
 SCMD DriverOne;        // Driver Object definition
 MPU9250 IMU(SPI, CS1); // MPU object definition
 
@@ -65,13 +70,14 @@ double PID_error, PID_last_error;            // Initialize error and previousErr
 double PID_cumulative_error, PID_rate_error; // Initialize the cumulative Error (Integral) and the rate of Error (Derivative)
 float Current_Yaw_deg = 0;                   // Addition of 180 deg to all values. The error is a substract, so the difference is the same
 
-double kp = 1; // Proportional contribution
+double kp = 20; // Proportional contribution
 double ki = 0; // Integral contribution
 double kd = 0; // Derivative contribution
 
 float Deg_to_reach = 0;  // Setpoint angle (degrees)
 bool Zero_state = false; // Check if PID encompass yaw of 0 degrees (to turn the value to a workable zone)
 int PID_output = 0;      // Output value of the PID [from 0 to 255]
+int initial_RW_speed_PID = 0; // Initial RW speed for PID
 
 int increment_speed = 50; // Increment speed of the ramp
 
@@ -194,6 +200,11 @@ void set_impulse(bool RW_direction, int New_RW_speed)
    * 
    * */
 
+  if (New_RW_speed != 0)
+  {
+    New_RW_speed = New_RW_speed + Motor_minimum_speed;
+  }
+  
   if (RW_direction) // Reaction Wheel Counter Clock Wise
   {
     DriverOne.setDrive(1, 0, New_RW_speed); // Change direction depending on motor connection
@@ -309,8 +320,8 @@ void read_IMU()
   // When compiling, leave the IMU immobile so that the accelerometer calibrates properly.
   // Once the values ​​are obtained, they are noted and it is recompiled as it had been before.
   
-  Accel_pitch_deg -= 0.35;
-  Accel_roll_deg -= 3.6;
+  Accel_pitch_deg -= 0.58;
+  Accel_roll_deg -= 1.51;
 
   //      Serial1.print(Accel_pitch_deg,6);
   //      Serial1.print("\t");
@@ -440,7 +451,7 @@ void computePID()
   // Time step
   float dT = ((1 / ((float)STM32_CLOCK / (float)Timer1.getPrescaleFactor())) * Timer1.getOverflow()) * 0.001; // in seconds
 
-  read_IMU();
+  read_show_IMU();
 
   Current_Yaw_deg = Yaw_deg;
 
@@ -490,13 +501,7 @@ void computePID()
   
   PID_output = PID_P + PID_I + PID_D; //  PID control
 
-  PID_output = PID_output + RW_speed;
-  
-  // Prevent overflow
-  if (PID_output > 255)
-    PID_output = 255;
-  if (PID_output < -255)
-    PID_output = -255;
+  PID_output = PID_output + initial_RW_speed_PID;
 
   bool RW_direction = true; // true=positive (CounterClockwise), false=negative (Clockwise)
 
@@ -506,6 +511,13 @@ void computePID()
     RW_direction = false;
   }
 
+  // Prevent overflow (the effective range is (-255 to -20 and 20 to 255), so we limit it to have a continuous range from (-240 to 240)
+  // It is chosen Motor_minimum_speed = 15 to have more margin 
+  if (PID_output > 255 - Motor_minimum_speed)
+    PID_output = 255 - Motor_minimum_speed;
+
+  Serial1.print("PID_output: ");
+  Serial1.println(PID_output);
   
   set_impulse(RW_direction, PID_output);
 
@@ -562,7 +574,7 @@ void mode_motor_on_off()
   */
 
   OBC_mode_value = 0;
-  set_impulse(1, 255);
+  set_impulse(1, 255 - Motor_minimum_speed);
   Serial1.println("Motor status ON");
   Timer1.attachInterrupt(TIMER_CH3, OBC_data_receive);
   while (OBC_data_value == 0)
@@ -696,14 +708,14 @@ void mode_Positioning_RW()
   Timer1.attachInterrupt(TIMER_CH3, EmergencyStop);
 
   // Depend on the tolerance enable Fine or Coarse positioning
-  if (abs(OBC_data_value) <= Pointing_mode_tolerance)
-  {
+//  if (abs(OBC_data_value) <= Pointing_mode_tolerance)
+//  {
     positioning_Fine();
-  }
-  else
-  {
-    positioning_Coarse();
-  }
+//  }
+//  else
+//  {
+//    positioning_Coarse();
+//  }
 }
 
 void positioning_Coarse()
@@ -939,7 +951,7 @@ void positioning_Coarse()
   }
   else
   {
-    // positioning_Fine(); // Correction
+    positioning_Fine(); // Correction
   }
 }
 
@@ -986,10 +998,14 @@ void positioning_Fine()
       Deg_to_reach -= 360;
   }
 
+  initial_RW_speed_PID = abs(RW_speed);
+  Serial1.println("Initial Speed");
+  Serial1.println(initial_RW_speed_PID);
+  
   Timer1.attachInterrupt(TIMER_CH4, computePID);
   while (waiting)
   { // Range of tolerance
-    if (abs(IMU_gyro_data_Z) < Gyro_tolerance_dec && abs(IMU_accel_data_X) < Accel_tolerance)
+    if (abs(IMU_gyro_data_Z - spd_offset) < Gyro_tolerance_PID && Yaw_deg < Deg_to_reach + Final_pointing_tolerance && Yaw_deg > Deg_to_reach - Final_pointing_tolerance)
     { // we consider it is stopped, modify values to be accurate
       waiting = false;
     }
@@ -1097,10 +1113,10 @@ void setup()
 //      Serial1.println(IMU.getMagScaleFactorZ());
 
 
-  IMU.setMagCalX(28.24, 1.24); // The first value corresponds to the MagBias, and the second the ScaleFactor.
-  IMU.setMagCalY(21.61, 0.93);
-  IMU.setMagCalZ(-25.11, 0.89);
-
+  IMU.setMagCalX(21.31, 1.67); // The first value corresponds to the MagBias, and the second the ScaleFactor.
+  IMU.setMagCalY(6.09, 0.89);
+  IMU.setMagCalZ(-32.13, 0.78);
+  
   Serial1.println("MPU9250 Ready to Use!");
 
 

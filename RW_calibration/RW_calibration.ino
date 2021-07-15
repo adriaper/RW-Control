@@ -132,8 +132,8 @@ void read_IMU()
   // When compiling, leave the IMU immobile so that the accelerometer calibrates properly.
   // Once the values ​​are obtained, they are noted and it is recompiled as it had been before.
 
-  Accel_pitch_deg -= 0.35;
-  Accel_roll_deg -= 3.6;
+  Accel_pitch_deg -= 0.58;
+  Accel_roll_deg -= 1.51;
 
         Serial1.print(Accel_pitch_deg,6);
         Serial1.print("\t");
@@ -298,9 +298,9 @@ void setup() {
 //      Serial1.print(",");
 //      Serial1.println(IMU.getMagScaleFactorZ());
 
-  IMU.setMagCalX(28.24, 1.24); // The first value corresponds to the MagBias, and the second the ScaleFactor.
-  IMU.setMagCalY(21.61, 0.93);
-  IMU.setMagCalZ(-25.11, 0.89);
+  IMU.setMagCalX(21.31, 1.67); // The first value corresponds to the MagBias, and the second the ScaleFactor.
+  IMU.setMagCalY(6.09, 0.89);
+  IMU.setMagCalZ(-32.13, 0.78);
 
   Serial1.println("MPU9250 Ready to Use!");
 
