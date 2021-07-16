@@ -33,7 +33,7 @@
 #define Gyro_tolerance_dec 5           // Tolerance for gyro measurement (+-1 unit of gyroscope Z tolerance) (Accounts to know if it is rotating or not at a constant speed for the ramp)
 #define Gyro_tolerance_acc 80           // Tolerance for gyro measurement (+-1 unit of gyroscope Z tolerance) (Accounts to know if it is rotating or not at a constant speed for the ramp)
 
-#define Gyro_tolerance_PID 0           // Tolerance for gyro measurement (+-1 unit of gyroscope Z tolerance) (Accounts to know if it is rotating or not at a constant speed for the ramp)
+#define Gyro_tolerance_PID 0.5           // Tolerance for gyro measurement (+-1 unit of gyroscope Z tolerance) (Accounts to know if it is rotating or not at a constant speed for the ramp)
 
 
 #define Motor_minimum_speed 15 // Minimum speed that turn on the motor
@@ -70,14 +70,15 @@ double PID_error, PID_last_error;            // Initialize error and previousErr
 double PID_cumulative_error, PID_rate_error; // Initialize the cumulative Error (Integral) and the rate of Error (Derivative)
 float Current_Yaw_deg = 0;                   // Addition of 180 deg to all values. The error is a substract, so the difference is the same
 
-double kp = 20; // Proportional contribution
+double kp = 1.6*1.5; // Proportional contribution
 double ki = 0; // Integral contribution
-double kd = 0; // Derivative contribution
+double kd = 0.6*1.5*1; // Derivative contribution
 
 float Deg_to_reach = 0;  // Setpoint angle (degrees)
 bool Zero_state = false; // Check if PID encompass yaw of 0 degrees (to turn the value to a workable zone)
 int PID_output = 0;      // Output value of the PID [from 0 to 255]
 int initial_RW_speed_PID = 0; // Initial RW speed for PID
+float Deg_to_reach_perc = 0; // Percentage of angle. Transform angle to percentage (Deg_to_reach == setPoint)
 
 int increment_speed = 50; // Increment speed of the ramp
 
@@ -189,14 +190,12 @@ void set_impulse(bool RW_direction, int New_RW_speed)
   // Account for change in direction
   // If motor's z-axis direction is coincident with CubeSat's z-axis direction
   /**
-   * RW_direction == true  ---> CounterClockwise, motor direction = 0
-   * RW_direction == false  ---> Clockwise, motor direction = 1
+   * RW_direction == true ---> CubeSat Clockwise, Motor CounterClockwise in CubeSat's frame, Motor in motor frame CounterClockwise and direction = 1    
    * 
    * */
   // If motor's z-axis direction is CONTRARY to CubeSat's z-axis direction
   /**
-   * RW_direction == true  ---> CounterClockwise, motor direction = 1
-   * RW_direction == false  ---> Clockwise, motor direction = 0
+   * RW_direction == true ---> CubeSat Clockwise, Motor CounterClockwise in CubeSat's frame, Motor in motor frame Clockwise and direction = 0 
    * 
    * */
 
@@ -321,7 +320,7 @@ void read_IMU()
   // Once the values ​​are obtained, they are noted and it is recompiled as it had been before.
   
   Accel_pitch_deg -= 0.58;
-  Accel_roll_deg -= 1.51;
+  Accel_roll_deg -= 1.49;
 
   //      Serial1.print(Accel_pitch_deg,6);
   //      Serial1.print("\t");
@@ -388,21 +387,21 @@ void show_IMU()
   */
 
   // Print accelerometer values
-  //    Serial1.print("Ax: ");
-  Serial1.print(IMU_accel_data_X, 4);
-  Serial1.print(';');
-  Serial1.print(IMU_accel_data_Y, 4);
-  Serial1.print(';');
-  //   Serial1.print(IMU_accel_data_Z,4);
-  //   Serial1.println("");
-
-  // Print Gyro values
-  // Serial1.print(" / G: ");
-  // Serial1.print(IMU_gyro_data_X,4);  Serial1.print(';');
-  // Serial1.print(IMU_gyro_data_Y,4);  Serial1.print(';');
+//  //    Serial1.print("Ax: ");
+//  Serial1.print(IMU_accel_data_X, 4);
+//  Serial1.print(';');
+//  Serial1.print(IMU_accel_data_Y, 4);
+//  Serial1.print(';');
+//  //   Serial1.print(IMU_accel_data_Z,4);
+//  //   Serial1.println("");
+//
+//  // Print Gyro values
+//  // Serial1.print(" / G: ");
+//  // Serial1.print(IMU_gyro_data_X,4);  Serial1.print(';');
+//  // Serial1.print(IMU_gyro_data_Y,4);  Serial1.print(';');
   Serial1.print(IMU_gyro_data_Z, 4);
-  Serial1.print(';');
-  // Serial1.println("");
+//  Serial1.print(';');
+//  // Serial1.println("");
 
   // Print Mag values
   //   Serial1.print("MAGS: ");
@@ -467,15 +466,25 @@ void computePID()
     Current_Yaw_deg -= 360; // One of them will increase over 360, it is a correction
 
   // Percentage
-  volatile float Yaw_deg_perc = (Current_Yaw_deg - 360) / (-360) * 100;
-
-  // Transform angle to percentage (Deg_to_reach == setPoint)
-  volatile float Deg_to_reach_perc = (Deg_to_reach - 360) / (-360) * 100;
-
+  volatile float Yaw_deg_perc = (Current_Yaw_deg) / (360) * 100;
+  
   // Errors
   PID_error = Deg_to_reach_perc - Yaw_deg_perc;       // Calculate error (Proportional)
+  
+    if (PID_error > 50)
+  {
+    PID_error = PID_error - 100;
+  }
+
+  if (PID_error < -50)
+  {
+    PID_error = PID_error + 100;
+  }
+  
   PID_cumulative_error += PID_error * dT;             // Calculate the cumulative error (Integral)
   PID_rate_error = (PID_error - PID_last_error) / dT; // Calculate the rate of error (Derivative)
+
+
 
   // PID Control
   float PID_P = kp * PID_error;            // Proportional
@@ -516,8 +525,8 @@ void computePID()
   if (PID_output > 255 - Motor_minimum_speed)
     PID_output = 255 - Motor_minimum_speed;
 
-  Serial1.print("PID_output: ");
-  Serial1.println(PID_output);
+//  Serial1.print("PID_output: ");
+//  Serial1.println(PID_output);
   
   set_impulse(RW_direction, PID_output);
 
@@ -708,14 +717,14 @@ void mode_Positioning_RW()
   Timer1.attachInterrupt(TIMER_CH3, EmergencyStop);
 
   // Depend on the tolerance enable Fine or Coarse positioning
-//  if (abs(OBC_data_value) <= Pointing_mode_tolerance)
-//  {
+  if (abs(OBC_data_value) <= Pointing_mode_tolerance)
+  {
     positioning_Fine();
-//  }
-//  else
-//  {
-//    positioning_Coarse();
-//  }
+  }
+  else
+  {
+    positioning_Coarse();
+  }
 }
 
 void positioning_Coarse()
@@ -951,6 +960,10 @@ void positioning_Coarse()
   }
   else
   {
+    OBC_data_value=OBC_data_value-Yaw_deg;
+    if(OBC_data_value<0){
+      OBC_data_value=OBC_data_value+360;
+    }
     positioning_Fine(); // Correction
   }
 }
@@ -1001,6 +1014,10 @@ void positioning_Fine()
   initial_RW_speed_PID = abs(RW_speed);
   Serial1.println("Initial Speed");
   Serial1.println(initial_RW_speed_PID);
+
+
+  // Transform angle to percentage (Deg_to_reach == setPoint)
+  Deg_to_reach_perc = (Deg_to_reach) / (360) * 100;
   
   Timer1.attachInterrupt(TIMER_CH4, computePID);
   while (waiting)
@@ -1113,9 +1130,9 @@ void setup()
 //      Serial1.println(IMU.getMagScaleFactorZ());
 
 
-  IMU.setMagCalX(21.31, 1.67); // The first value corresponds to the MagBias, and the second the ScaleFactor.
-  IMU.setMagCalY(6.09, 0.89);
-  IMU.setMagCalZ(-32.13, 0.78);
+  IMU.setMagCalX(14.96, 0.86); // The first value corresponds to the MagBias, and the second the ScaleFactor.
+  IMU.setMagCalY(2.96, 1.32);
+  IMU.setMagCalZ(-32.48, 0.93);
   
   Serial1.println("MPU9250 Ready to Use!");
 
