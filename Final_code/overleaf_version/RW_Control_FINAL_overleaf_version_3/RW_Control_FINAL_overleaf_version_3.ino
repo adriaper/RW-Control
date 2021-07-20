@@ -70,8 +70,14 @@ double PID_error, PID_last_error;            // Initialize error and previousErr
 double PID_cumulative_error, PID_rate_error; // Initialize the cumulative Error (Integral) and the rate of Error (Derivative)
 float Current_Yaw_deg = 0;                   // Addition of 180 deg to all values. The error is a substract, so the difference is the same
 
+// PD
+//double kp = 1.6*1.5; // Proportional contribution
+//double ki = 0; // Integral contribution
+//double kd = 0.6*1.5*1; // Derivative contribution
+
+// PID
 double kp = 1.6*1.5; // Proportional contribution
-double ki = 0; // Integral contribution
+double ki = 0.006*1.5/1; // Integral contribution
 double kd = 0.6*1.5*1; // Derivative contribution
 
 float Deg_to_reach = 0;  // Setpoint angle (degrees)
@@ -319,8 +325,8 @@ void read_IMU()
   // When compiling, leave the IMU immobile so that the accelerometer calibrates properly.
   // Once the values ​​are obtained, they are noted and it is recompiled as it had been before.
   
-  Accel_pitch_deg -= 0.58;
-  Accel_roll_deg -= 1.49;
+  Accel_pitch_deg -= 0.25;
+  Accel_roll_deg -= 1.15;
 
   //      Serial1.print(Accel_pitch_deg,6);
   //      Serial1.print("\t");
@@ -369,10 +375,16 @@ void read_IMU()
   Yaw_deg = Yaw_deg - deg_offset;
 
     // The next two lines contain the value of Yaw_deg between 0 and 360 degrees.
-  if (Yaw_deg < 0)
+  while (Yaw_deg < 0)
+  {
     Yaw_deg += 360;
-  if (Yaw_deg >= 360)
+    delay(1);
+  }
+  while (Yaw_deg >= 360)
+  {
     Yaw_deg -= 360;
+    delay(1);
+  }
 }
 
 void show_IMU()
@@ -400,7 +412,7 @@ void show_IMU()
 //  // Serial1.print(IMU_gyro_data_X,4);  Serial1.print(';');
 //  // Serial1.print(IMU_gyro_data_Y,4);  Serial1.print(';');
   Serial1.print(IMU_gyro_data_Z, 4);
-//  Serial1.print(';');
+  Serial1.print(';');
 //  // Serial1.println("");
 
   // Print Mag values
@@ -525,8 +537,8 @@ void computePID()
   if (PID_output > 255 - Motor_minimum_speed)
     PID_output = 255 - Motor_minimum_speed;
 
-//  Serial1.print("PID_output: ");
-//  Serial1.println(PID_output);
+  Serial1.print("PID_output: ");
+  Serial1.println(PID_output);
   
   set_impulse(RW_direction, PID_output);
 
@@ -1006,7 +1018,7 @@ void positioning_Fine()
 
   if (Zero_state)
   {
-    Deg_to_reach + 180;
+    Deg_to_reach = Deg_to_reach + 180;
     if (Deg_to_reach >= 360)
       Deg_to_reach -= 360;
   }
@@ -1130,9 +1142,9 @@ void setup()
 //      Serial1.println(IMU.getMagScaleFactorZ());
 
 
-  IMU.setMagCalX(14.96, 0.86); // The first value corresponds to the MagBias, and the second the ScaleFactor.
-  IMU.setMagCalY(2.96, 1.32);
-  IMU.setMagCalZ(-32.48, 0.93);
+  IMU.setMagCalX(16.15, 1.41); // The first value corresponds to the MagBias, and the second the ScaleFactor.
+  IMU.setMagCalY(15.51, 0.86);
+  IMU.setMagCalZ(-35.37, 0.89);
   
   Serial1.println("MPU9250 Ready to Use!");
 
