@@ -30,11 +30,10 @@
 #define Final_pointing_tolerance 1 // Tolerance for final pointing (+-1 degree of tolerance) (Check if position is within the margin)
 #define Pointing_mode_tolerance 5  // Tolerance for selecting pointing mode (+-5 degree of tolerance) (Select whether to use coarse or fine mode)
 #define Accel_tolerance 100        // Tolerance for acceleration measurement (+-0.5 unit of acceleration of tolerance) (Acceptable error of acceleration)
-#define Gyro_tolerance_dec 5           // Tolerance for gyro measurement (+-1 unit of gyroscope Z tolerance) (Accounts to know if it is rotating or not at a constant speed for the ramp)
-#define Gyro_tolerance_acc 80           // Tolerance for gyro measurement (+-1 unit of gyroscope Z tolerance) (Accounts to know if it is rotating or not at a constant speed for the ramp)
+#define Gyro_tolerance_dec 5       // Tolerance for gyro measurement (+-1 unit of gyroscope Z tolerance) (Accounts to know if it is rotating or not at a constant speed for the ramp)
+#define Gyro_tolerance_acc 80      // Tolerance for gyro measurement (+-1 unit of gyroscope Z tolerance) (Accounts to know if it is rotating or not at a constant speed for the ramp)
 
-#define Gyro_tolerance_PID 0.5           // Tolerance for gyro measurement (+-1 unit of gyroscope Z tolerance) (Accounts to know if it is rotating or not at a constant speed for the ramp)
-
+#define Gyro_tolerance_PID 0.5 // Tolerance for gyro measurement (+-1 unit of gyroscope Z tolerance) (Accounts to know if it is rotating or not at a constant speed for the ramp)
 
 #define Motor_minimum_speed 15 // Minimum speed that turn on the motor
 
@@ -76,24 +75,28 @@ float Current_Yaw_deg = 0;                   // Addition of 180 deg to all value
 //double kd = 0.6*1.5*1; // Derivative contribution
 
 // PID
-double kp = 1.6*1.5; // Proportional contribution
-double ki = 0.006*1.5/1; // Integral contribution
-double kd = 0.6*1.5*1; // Derivative contribution
+double kp = 1.6 * 1.5;       // Proportional contribution
+double ki = 0.006 * 1.5 / 1; // Integral contribution
+double kd = 0.6 * 1.5 * 1;   // Derivative contribution
 
-float Deg_to_reach = 0;  // Setpoint angle (degrees)
-bool Zero_state = false; // Check if PID encompass yaw of 0 degrees (to turn the value to a workable zone)
-int PID_output = 0;      // Output value of the PID [from 0 to 255]
+float Deg_to_reach = 0;       // Setpoint angle (degrees)
+bool Zero_state = false;      // Check if PID encompass yaw of 0 degrees (to turn the value to a workable zone)
+int PID_output = 0;           // Output value of the PID [from 0 to 255]
 int initial_RW_speed_PID = 0; // Initial RW speed for PID
-float Deg_to_reach_perc = 0; // Percentage of angle. Transform angle to percentage (Deg_to_reach == setPoint)
+float Deg_to_reach_perc = 0;  // Percentage of angle. Transform angle to percentage (Deg_to_reach == setPoint)
 
 int increment_speed = 50; // Increment speed of the ramp
 
-void WAITFORINPUT(){            
-  while(!Serial1.available()){};  
-  while(Serial1.available()){     
-    Serial1.read();            
-  };                            
-}  
+void WAITFORINPUT()
+{
+  while (!Serial1.available())
+  {
+  };
+  while (Serial1.available())
+  {
+    Serial1.read();
+  };
+}
 
 // ██████████████████████████████████████████████████████████████████████ FUNCTIONS
 // ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ GENERAL USE FUNCTIONS
@@ -175,7 +178,7 @@ void EmergencyStop()
   {
     // If it stopped
     set_impulse(1, 0);
-    OBC_data_value = 0;  
+    OBC_data_value = 0;
     mode_OBC_Input_Wait();
   }
 }
@@ -209,7 +212,7 @@ void set_impulse(bool RW_direction, int New_RW_speed)
   {
     New_RW_speed = New_RW_speed + Motor_minimum_speed;
   }
-  
+
   if (RW_direction) // Reaction Wheel Counter Clock Wise
   {
     DriverOne.setDrive(1, 0, New_RW_speed); // Change direction depending on motor connection
@@ -324,7 +327,7 @@ void read_IMU()
   // To calibrate the accelerometer, put the values ​​0.0 in the variables and uncomment the 3 Serial1.prints
   // When compiling, leave the IMU immobile so that the accelerometer calibrates properly.
   // Once the values ​​are obtained, they are noted and it is recompiled as it had been before.
-  
+
   Accel_pitch_deg -= 0.25;
   Accel_roll_deg -= 1.15;
 
@@ -370,11 +373,10 @@ void read_IMU()
   // If you want to be precise, add the declination of the geographical place where you are (https: // www.ign.es/web/gmt-declinacion-magnetica)
   // Yaw_deg += Declination;
 
-
   // To initate at zero
   Yaw_deg = Yaw_deg - deg_offset;
 
-    // The next two lines contain the value of Yaw_deg between 0 and 360 degrees.
+  // The next two lines contain the value of Yaw_deg between 0 and 360 degrees.
   while (Yaw_deg < 0)
   {
     Yaw_deg += 360;
@@ -399,21 +401,21 @@ void show_IMU()
   */
 
   // Print accelerometer values
-//  //    Serial1.print("Ax: ");
-//  Serial1.print(IMU_accel_data_X, 4);
-//  Serial1.print(';');
-//  Serial1.print(IMU_accel_data_Y, 4);
-//  Serial1.print(';');
-//  //   Serial1.print(IMU_accel_data_Z,4);
-//  //   Serial1.println("");
-//
-//  // Print Gyro values
-//  // Serial1.print(" / G: ");
-//  // Serial1.print(IMU_gyro_data_X,4);  Serial1.print(';');
-//  // Serial1.print(IMU_gyro_data_Y,4);  Serial1.print(';');
+  //  //    Serial1.print("Ax: ");
+  //  Serial1.print(IMU_accel_data_X, 4);
+  //  Serial1.print(';');
+  //  Serial1.print(IMU_accel_data_Y, 4);
+  //  Serial1.print(';');
+  //  //   Serial1.print(IMU_accel_data_Z,4);
+  //  //   Serial1.println("");
+  //
+  //  // Print Gyro values
+  //  // Serial1.print(" / G: ");
+  //  // Serial1.print(IMU_gyro_data_X,4);  Serial1.print(';');
+  //  // Serial1.print(IMU_gyro_data_Y,4);  Serial1.print(';');
   Serial1.print(IMU_gyro_data_Z, 4);
   Serial1.print(';');
-//  // Serial1.println("");
+  //  // Serial1.println("");
 
   // Print Mag values
   //   Serial1.print("MAGS: ");
@@ -479,11 +481,11 @@ void computePID()
 
   // Percentage
   volatile float Yaw_deg_perc = (Current_Yaw_deg) / (360) * 100;
-  
+
   // Errors
-  PID_error = Deg_to_reach_perc - Yaw_deg_perc;       // Calculate error (Proportional)
-  
-    if (PID_error > 50)
+  PID_error = Deg_to_reach_perc - Yaw_deg_perc; // Calculate error (Proportional)
+
+  if (PID_error > 50)
   {
     PID_error = PID_error - 100;
   }
@@ -492,11 +494,9 @@ void computePID()
   {
     PID_error = PID_error + 100;
   }
-  
+
   PID_cumulative_error += PID_error * dT;             // Calculate the cumulative error (Integral)
   PID_rate_error = (PID_error - PID_last_error) / dT; // Calculate the rate of error (Derivative)
-
-
 
   // PID Control
   float PID_P = kp * PID_error;            // Proportional
@@ -519,7 +519,7 @@ void computePID()
     if (PID_D < -255)
       PID_D = -255;
   */
-  
+
   PID_output = PID_P + PID_I + PID_D; //  PID control
 
   PID_output = PID_output + initial_RW_speed_PID;
@@ -533,13 +533,13 @@ void computePID()
   }
 
   // Prevent overflow (the effective range is (-255 to -20 and 20 to 255), so we limit it to have a continuous range from (-240 to 240)
-  // It is chosen Motor_minimum_speed = 15 to have more margin 
+  // It is chosen Motor_minimum_speed = 15 to have more margin
   if (PID_output > 255 - Motor_minimum_speed)
     PID_output = 255 - Motor_minimum_speed;
 
   Serial1.print("PID_output: ");
   Serial1.println(PID_output);
-  
+
   set_impulse(RW_direction, PID_output);
 
   // Save current error and time for next iteration
@@ -629,13 +629,16 @@ void mode_motor_set_speed()
     delay(1); // If not used the while function does not work
   }
   Timer1.detachInterrupt(TIMER_CH3);
-  
+
   Serial1.print(OBC_data_value);
-  
-  if(OBC_data_value>0){
+
+  if (OBC_data_value > 0)
+  {
     set_impulse(1, OBC_data_value);
-  }else{
-  set_impulse(0, -OBC_data_value);
+  }
+  else
+  {
+    set_impulse(0, -OBC_data_value);
   }
 
   OBC_data_value = 0;
@@ -774,10 +777,10 @@ void positioning_Coarse()
   read_show_IMU();
   spd_offset = IMU_gyro_data_Z;
   acc_offset = IMU_accel_data_X;
-//  Serial1.print("spd_offset: ");
-//  Serial1.println(spd_offset);
-//  Serial1.print("acc_offset: ");
-//  Serial1.println(acc_offset);
+  //  Serial1.print("spd_offset: ");
+  //  Serial1.println(spd_offset);
+  //  Serial1.print("acc_offset: ");
+  //  Serial1.println(acc_offset);
   Initial_IMU_degree_value = Yaw_deg; // Stores initial degree, only in Z
   int initial_RW_speed = abs(RW_speed);
   int set_RW_speed = initial_RW_speed + increment_speed; //with 50 it goes up to 85 until it gets a bit steady (experimental value)
@@ -817,18 +820,20 @@ void positioning_Coarse()
   Serial1.print(Delta_degree_ramp); // Difference of ange
   Serial1.print(" / ED: ");
   Serial1.println(Final_IMU_degree_value); // Final, End angle
-  // --------------------------------------------------------------WAITING
- while ((degree_turn_value - 2 * Delta_degree_ramp) < 0) // if it is <0, skip the waiting phase, deceleration must be done immediately after, and still it would be too much turn.
-  {
-    degree_turn_value = degree_turn_value + 360;
-  }
-    waiting = true;
-    Prev_Yaw_deg=Yaw_deg;
-    if (RW_direction)
-    {
-      // CASE CCW
 
-      /*
+  // --------------------------------------------------------------WAITING
+
+  while ((degree_turn_value - 2 * Delta_degree_ramp) < 0) // if it is <0, skip the waiting phase, deceleration must be done immediately after, and still it would be too much turn.
+  {
+    degree_turn_value = degree_turn_value + 360; // Add one lap
+  }
+  waiting = true;
+  Prev_Yaw_deg = Yaw_deg;
+  if (RW_direction)
+  {
+    // CASE CCW
+
+    /*
       RW CCW
       CB CW
       IMU positive
@@ -844,84 +849,84 @@ void positioning_Coarse()
       Degree_stop_wait=350+(150-2*50)=400;  40
 
       */
-      Degree_stop_wait = Final_IMU_degree_value + (degree_turn_value - 2 * Delta_degree_ramp); // Get value of degree to start
+    Degree_stop_wait = Final_IMU_degree_value + (degree_turn_value - 2 * Delta_degree_ramp); // Get value of degree to start
 
-      Timer1.attachInterrupt(TIMER_CH4, read_show_IMU);
+    Timer1.attachInterrupt(TIMER_CH4, read_show_IMU);
+    Serial1.println("Waiting");
+    while (waiting)
+    { // Stays as long as waiting is true.
+
+      // CAUTION WITH READING VALUES; AS IT IS ALWAYS FROM 0 TO 360
+      //  Degree_stop_wait will always be > Yaw_deg. If Yaw_deg>> (ex: 359º),  Degree_stop_wait can be >360. Thus the value of If Yaw_deg would never reach Degree_stop_wait
+      //  Degree_stop_wait cant be decreased, as the way to check if its reached is by a greater. If it is decreased by 360º (so it stays in relative place), it could be < Yaw_deg and would immediately exit the while without waiting.
+      //  the way to do is check if there is a heavy change on Yaw_deg (pass on 0) to check if adding or substracting a lap, making it go out of the 0 and 360 range.
+      // It should not be a high acceleration enough to make a jump of degree of 180º in such short time,so it should be fine.
+      // Caution disconnection from IMU, could give a false jump, that is why a check on Yaw_deg first.
+
+      if (Yaw_deg < 0.0001 && Yaw_deg > -0.0001)
+      { // if it is almost exactly 0 then most probably there is a disconnection. Close numbers should not trigger it.
+      }
+      else if (Yaw_deg - Prev_Yaw_deg < -180)
+      {                     // Checks for a heavy change (greater than half turn). Done by changes in 0, like jumping from 359 to 0.
+        overlap_count += 1; // adds a lap
+      }
+      else if (Yaw_deg - Prev_Yaw_deg > +180)
+      {                     // Checks for a heavy change (greater than half turn). Done by changes in 0, like jumping from 0 to 359. (Not possible in theory, as it increases, but deviations could mess it up)
+        overlap_count -= 1; // substracts a lap
+      }                     // if neither are triggered, change has been samall or no change has been done yet
+      Prev_Yaw_deg = Yaw_deg;
+      Check_Yaw_deg = Yaw_deg + (360 * overlap_count); // Rewriting of value, in new variable so it does not add itself.
+      if (Check_Yaw_deg > Degree_stop_wait)
+      {                  // As it is CCW, degree increases. When reading is > to stop value, exits the while
+        waiting = false; // exit condition
+      }
+      delay(1); // To solve errors
+      // No writing of read_IMU as it is already done by a timer. Just to remind Yaw_deg is constantly reading values.
+    }
+    Timer1.detachInterrupt(TIMER_CH4);
+  }
+  else
+  {
+    // CASE CW
+    // if its <0, it must be done immediately after, and still it would be too much turn.
+    Degree_stop_wait = Final_IMU_degree_value - (degree_turn_value - 2 * Delta_degree_ramp); // Get value of degree to start
+
+    Timer1.attachInterrupt(TIMER_CH4, read_IMU);
+    while (waiting)
+    { // Stays as long as waiting is true.
       Serial1.println("Waiting");
-      while (waiting)
-      { // Stays as long as waiting is true.
 
-        // CAUTION WITH READING VALUES; AS IT IS ALWAYS FROM 0 TO 360
-        //  Degree_stop_wait will always be > Yaw_deg. If Yaw_deg>> (ex: 359º),  Degree_stop_wait can be >360. Thus the value of If Yaw_deg would never reach Degree_stop_wait
-        //  Degree_stop_wait cant be decreased, as the way to check if its reached is by a greater. If it is decreased by 360º (so it stays in relative place), it could be < Yaw_deg and would immediately exit the while without waiting.
-        //  the way to do is check if there is a heavy change on Yaw_deg (pass on 0) to check if adding or substracting a lap, making it go out of the 0 and 360 range.
-        // It should not be a high acceleration enough to make a jump of degree of 180º in such short time,so it should be fine.
-        // Caution disconnection from IMU, could give a false jump, that is why a check on Yaw_deg first.
+      // CAUTION WITH READING VALUES; AS IT IS ALWAYS FROM 0 TO 360
+      //  Degree_stop_wait will always be < Yaw_deg. If Yaw_deg<< (ex: 1º),  Degree_stop_wait can be <0. Thus the value of If Yaw_deg would never reach Degree_stop_wait
+      //  Degree_stop_wait can't be increased, as the way to check if its reached is by a greater. If it is increased by 360º (so it stays in relative place), it could be > Yaw_deg and would immediately exit the while without waiting.
+      //  the way to do is check if there is a heavy change on Yaw_deg (pass on 0) to check iff adding or substracting a lap, making it go out of the 0 and 360 range.
+      // It should not be a high acceleration enough to make a jump of degree of 180º in such short time, so it should be fine.
+      // Caution disconnection from IMU, could give a false jump, that is why a check on Yaw_deg first.
 
-        if (Yaw_deg < 0.0001 && Yaw_deg > -0.0001)
-        { // if it is almost exactly 0 then most probably there is a disconnection. Close numbers should not trigger it.
-        }
-        else if (Yaw_deg - Prev_Yaw_deg < -180)
-        {                     // Checks for a heavy change (greater than half turn). Done by changes in 0, like jumping from 359 to 0.
-          overlap_count += 1; // adds a lap
-        }
-        else if (Yaw_deg - Prev_Yaw_deg > +180)
-        {                     // Checks for a heavy change (greater than half turn). Done by changes in 0, like jumping from 0 to 359. (Not possible in theory, as it increases, but deviations could mess it up)
-          overlap_count -= 1; // substracts a lap
-        }                     // if neither are triggered, change has been samall or no change has been done yet
-        Prev_Yaw_deg = Yaw_deg;
-        Check_Yaw_deg = Yaw_deg + (360 * overlap_count); // Rewriting of value, in new variable so it does not add itself.
-        if (Check_Yaw_deg > Degree_stop_wait)
-        {                  // As it is CCW, degree increases. When reading is > to stop value, exits the while
-          waiting = false; // exit condition
-        }
-        delay(1); // To solve errors
-        // No writing of read_IMU as it is already done by a timer. Just to remind Yaw_deg is constantly reading values.
+      Check_Yaw_deg = Yaw_deg; // New variable so it does not change during an iteration
+      if (Check_Yaw_deg < 0.0001 && Check_Yaw_deg > -0.0001)
+      { // if it is almost exactly 0 then most probably there is a disconnection. Close numbers should not trigger it.
       }
-      Timer1.detachInterrupt(TIMER_CH4);
-    }
-    else
-    {
-      // CASE CW
-      // if its <0, it must be done immediately after, and still it would be too much turn.
-      Degree_stop_wait = Final_IMU_degree_value - (degree_turn_value - 2 * Delta_degree_ramp); // Get value of degree to start
-
-      Timer1.attachInterrupt(TIMER_CH4, read_IMU);
-      while (waiting)
-      { // Stays as long as waiting is true.
-        Serial1.println("Waiting");
-
-        // CAUTION WITH READING VALUES; AS IT IS ALWAYS FROM 0 TO 360
-        //  Degree_stop_wait will always be < Yaw_deg. If Yaw_deg<< (ex: 1º),  Degree_stop_wait can be <0. Thus the value of If Yaw_deg would never reach Degree_stop_wait
-        //  Degree_stop_wait can't be increased, as the way to check if its reached is by a greater. If it is increased by 360º (so it stays in relative place), it could be > Yaw_deg and would immediately exit the while without waiting.
-        //  the way to do is check if there is a heavy change on Yaw_deg (pass on 0) to check iff adding or substracting a lap, making it go out of the 0 and 360 range.
-        // It should not be a high acceleration enough to make a jump of degree of 180º in such short time, so it should be fine.
-        // Caution disconnection from IMU, could give a false jump, that is why a check on Yaw_deg first.
-
-        Check_Yaw_deg = Yaw_deg; // New variable so it does not change during an iteration
-        if (Check_Yaw_deg < 0.0001 && Check_Yaw_deg > -0.0001)
-        { // if it is almost exactly 0 then most probably there is a disconnection. Close numbers should not trigger it.
-        }
-        else if (Check_Yaw_deg - Prev_Yaw_deg > +180)
-        {                     // Checks for a heavy change (greater than half turn). Done by changes in 0, like jumping from 359 to 0. (Not possible in theory, as it decreases, but deviations could mess it up)
-          overlap_count += 1; // adds a lap
-        }
-        else if (Check_Yaw_deg - Prev_Yaw_deg < -180)
-        {                     // Checks for a heavy change (greater than half turn). Done by changes in 0, like jumping from 0 to 359.
-          overlap_count -= 1; // substracts a lap
-        }                     // if neither are triggered, change has been samall or no change has been done yet
-
-        Prev_Yaw_deg = Check_Yaw_deg;
-        Check_Yaw_deg = Check_Yaw_deg + (360 * overlap_count); // Rewriting of value. It does not add itself as it gets the read value in each iteration. In other words, it will not go through the iteration with numbers outside 0 and 360 range
-        if (Check_Yaw_deg < Degree_stop_wait)
-        {                  // As it is CCW, degree increases. When reading is > to stop value, exits the while
-          waiting = false; // exit condition
-        }
-        delay(1); // To solve errors
-        // No writing of read_IMU as it is already done by a timer. Just to remind Yaw_deg is constantly reading values.
+      else if (Check_Yaw_deg - Prev_Yaw_deg > +180)
+      {                     // Checks for a heavy change (greater than half turn). Done by changes in 0, like jumping from 359 to 0. (Not possible in theory, as it decreases, but deviations could mess it up)
+        overlap_count += 1; // adds a lap
       }
-      Timer1.detachInterrupt(TIMER_CH4);
+      else if (Check_Yaw_deg - Prev_Yaw_deg < -180)
+      {                     // Checks for a heavy change (greater than half turn). Done by changes in 0, like jumping from 0 to 359.
+        overlap_count -= 1; // substracts a lap
+      }                     // if neither are triggered, change has been samall or no change has been done yet
+
+      Prev_Yaw_deg = Check_Yaw_deg;
+      Check_Yaw_deg = Check_Yaw_deg + (360 * overlap_count); // Rewriting of value. It does not add itself as it gets the read value in each iteration. In other words, it will not go through the iteration with numbers outside 0 and 360 range
+      if (Check_Yaw_deg < Degree_stop_wait)
+      {                  // As it is CCW, degree increases. When reading is > to stop value, exits the while
+        waiting = false; // exit condition
+      }
+      delay(1); // To solve errors
+      // No writing of read_IMU as it is already done by a timer. Just to remind Yaw_deg is constantly reading values.
     }
+    Timer1.detachInterrupt(TIMER_CH4);
+  }
   // }
 
   // ----------------------------------------------------------DECELERATION
@@ -931,7 +936,7 @@ void positioning_Coarse()
   Serial1.println(Degree_stop_wait);
 
   // Initial_RW_Speed returns speed to original value instead of 0
-  
+
   Serial1.println(initial_RW_speed);
   generate_ramp(RW_direction, 0, initial_RW_speed, 0);
   // This is to assure the impulse is the same, as if there is some momentum accumulation, returning to 0 would be a different impulse
@@ -972,9 +977,10 @@ void positioning_Coarse()
   }
   else
   {
-    OBC_data_value=OBC_data_value-Yaw_deg;
-    if(OBC_data_value<0){
-      OBC_data_value=OBC_data_value+360;
+    OBC_data_value = OBC_data_value - Yaw_deg;
+    if (OBC_data_value < 0)
+    {
+      OBC_data_value = OBC_data_value + 360;
     }
     positioning_Fine(); // Correction
   }
@@ -1027,10 +1033,9 @@ void positioning_Fine()
   Serial1.println("Initial Speed");
   Serial1.println(initial_RW_speed_PID);
 
-
   // Transform angle to percentage (Deg_to_reach == setPoint)
   Deg_to_reach_perc = (Deg_to_reach) / (360) * 100;
-  
+
   Timer1.attachInterrupt(TIMER_CH4, computePID);
   while (waiting)
   { // Range of tolerance
@@ -1126,32 +1131,32 @@ void setup()
   // It moves in the shape of an eight approximately 2 min. It is recommended to carry out several times until the measurements are fine-tuned.
   // Uncomment everything and enter the values ​​obtained from the MagBias and ScaleFactor to view the results of the magnetometer.
   //
-//      IMU.calibrateMag();
-//      Serial1.println("Done");
-//  
-//      Serial1.print(IMU.getMagBiasX_uT());
-//      Serial1.print(",");
-//      Serial1.print(IMU.getMagBiasY_uT());
-//      Serial1.print(",");
-//      Serial1.println(IMU.getMagBiasZ_uT());
-//  
-//      Serial1.print(IMU.getMagScaleFactorX());
-//      Serial1.print(",");
-//      Serial1.print(IMU.getMagScaleFactorY());
-//      Serial1.print(",");
-//      Serial1.println(IMU.getMagScaleFactorZ());
-
+  //      IMU.calibrateMag();
+  //      Serial1.println("Done");
+  //
+  //      Serial1.print(IMU.getMagBiasX_uT());
+  //      Serial1.print(",");
+  //      Serial1.print(IMU.getMagBiasY_uT());
+  //      Serial1.print(",");
+  //      Serial1.println(IMU.getMagBiasZ_uT());
+  //
+  //      Serial1.print(IMU.getMagScaleFactorX());
+  //      Serial1.print(",");
+  //      Serial1.print(IMU.getMagScaleFactorY());
+  //      Serial1.print(",");
+  //      Serial1.println(IMU.getMagScaleFactorZ());
 
   IMU.setMagCalX(16.15, 1.41); // The first value corresponds to the MagBias, and the second the ScaleFactor.
   IMU.setMagCalY(15.51, 0.86);
   IMU.setMagCalZ(-35.37, 0.89);
-  
+
   Serial1.println("MPU9250 Ready to Use!");
 
+  Serial1.println("MPU9250 Ready to Use!");
 
   WAITFORINPUT();
   Serial1.println("START");
-  
+
   OBC_mode_value = 0;
   read_IMU();
   deg_offset = Yaw_deg;
